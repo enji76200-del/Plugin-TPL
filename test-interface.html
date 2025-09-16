@@ -64,15 +64,7 @@
             
             <!-- Admin controls (visible for testing) -->
             <div class="tsb-admin-controls">
-                <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
-                    Ajouter un Créneau
-                </button>
-                <button id="tsb-generate-weekly-btn" class="tsb-btn tsb-btn-success">
-                    Générer la semaine type
-                </button>
-                <button id="tsb-block-mode-btn" class="tsb-btn tsb-btn-warning">
-                    Mode blocage
-                </button>
+                <!-- Boutons admin masqués pour les utilisateurs classiques -->
             </div>
             
             <!-- Daily View -->
@@ -95,12 +87,11 @@
                                             <div class="tsb-slot-info">
                                                 <div class="tsb-slot-status">Disponible</div>
                                                 <div class="tsb-slot-capacity">2/5 inscrit(s)</div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Marie Dupont, Jean Martin</span></div>
                                             </div>
                                             <div class="tsb-slot-actions">
                                                 <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="1">S'inscrire</button>
                                                 <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="1">Me désinscrire</button>
-                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="1">Bloquer</button>
-                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="1">Supprimer</button>
                                             </div>
                                         </div>
                                     </div>
@@ -114,11 +105,10 @@
                                             <div class="tsb-slot-info">
                                                 <div class="tsb-slot-status">Complet</div>
                                                 <div class="tsb-slot-capacity">3/3 inscrit(s)</div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Paul Durand, Alice Petit, Hugo Leroy</span></div>
                                             </div>
                                             <div class="tsb-slot-actions">
                                                 <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="2">Me désinscrire</button>
-                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="2">Bloquer</button>
-                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="2">Supprimer</button>
                                             </div>
                                         </div>
                                     </div>
@@ -132,11 +122,10 @@
                                             <div class="tsb-slot-info">
                                                 <div class="tsb-slot-status">Disponible</div>
                                                 <div class="tsb-slot-capacity">0/4 inscrit(s)</div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Aucun</span></div>
                                             </div>
                                             <div class="tsb-slot-actions">
                                                 <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="3">S'inscrire</button>
-                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="3">Bloquer</button>
-                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="3">Supprimer</button>
                                             </div>
                                         </div>
                                     </div>
@@ -150,10 +139,14 @@
                                             <div class="tsb-slot-info">
                                                 <div class="tsb-slot-status">Bloqué (Maintenance)</div>
                                                 <div class="tsb-slot-capacity">0/2 inscrit(s)</div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Aucun</span></div>
                                             </div>
                                             <div class="tsb-slot-actions">
-                                                <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-unblock-btn" data-slot-id="4">Débloquer</button>
-                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="4">Supprimer</button>
+                                                <!-- Aucun bouton pour non admin -->
+                                                <div class="tsb-slot-users">Inscrits : <span>Marie D., Jean M.</span></div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Paul D., Alice P., Hugo L.</span></div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Aucun</span></div>
+                                                <div class="tsb-slot-users">Inscrits : <span>Aucun</span></div>
                                             </div>
                                         </div>
                                     </div>
@@ -187,18 +180,21 @@
                                 <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="1">
                                     <div class="tsb-slot-status-mini">Libre</div>
                                     <div class="tsb-slot-capacity-mini">2/5</div>
+                                    <div class="tsb-slot-users-mini">Inscrits : <span>Marie D., Jean M.</span></div>
                                 </div>
                             </td>
                             <td class="tsb-weekly-slot">
                                 <div class="tsb-slot-item-mini tsb-slot-full-mini" data-slot-id="2">
                                     <div class="tsb-slot-status-mini">Complet</div>
                                     <div class="tsb-slot-capacity-mini">3/3</div>
+                                    <div class="tsb-slot-users-mini">Inscrits : <span>Paul D., Alice P., Hugo L.</span></div>
                                 </div>
                             </td>
                             <td class="tsb-weekly-slot">
                                 <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="3">
                                     <div class="tsb-slot-status-mini">Libre</div>
                                     <div class="tsb-slot-capacity-mini">1/4</div>
+                                    <div class="tsb-slot-users-mini">Inscrits : <span>Aucun</span></div>
                                 </div>
                             </td>
                             <td class="tsb-weekly-slot"></td>
@@ -206,6 +202,7 @@
                                 <div class="tsb-slot-item-mini tsb-slot-blocked-mini" data-slot-id="4">
                                     <div class="tsb-slot-status-mini">Bloqué</div>
                                     <div class="tsb-slot-capacity-mini">0/2</div>
+                                    <div class="tsb-slot-users-mini">Inscrits : <span>Aucun</span></div>
                                 </div>
                             </td>
                             <td class="tsb-weekly-slot"></td>
@@ -273,14 +270,6 @@
                             <label>Nom :</label>
                             <input type="text" id="tsb-user-last-name" required>
                         </div>
-                        <div class="tsb-form-group">
-                            <label>Email :</label>
-                            <input type="email" id="tsb-user-email" required>
-                        </div>
-                        <div class="tsb-form-group">
-                            <label>Téléphone :</label>
-                            <input type="tel" id="tsb-user-phone">
-                        </div>
                         <button type="submit" class="tsb-btn tsb-btn-primary">S'inscrire</button>
                     </form>
                 </div>
@@ -293,15 +282,6 @@
                     <h3>Se désinscrire du créneau</h3>
                     <form id="tsb-unregister-form">
                         <input type="hidden" id="tsb-unregister-slot-id">
-                        <div class="tsb-form-group">
-                            <label>Email de confirmation :</label>
-                            <input type="email" id="tsb-unregister-email" required>
-                            <small>Entrez votre email pour confirmer la désinscription</small>
-                        </div>
-                        <div class="tsb-form-group">
-                            <label>Raison (optionnelle) :</label>
-                            <textarea id="tsb-unregister-reason" rows="3" placeholder="Pourquoi vous désinscrivez-vous ?"></textarea>
-                        </div>
                         <button type="submit" class="tsb-btn tsb-btn-danger">Me désinscrire</button>
                     </form>
                 </div>

@@ -455,6 +455,14 @@
             actions += `<button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="${slot.id}">Supprimer</button>`;
         }
         
+        let registeredNames = '';
+        if (slot.registrations && slot.registrations.length > 0) {
+            registeredNames = '<div class="tsb-slot-names">Inscrits : ';
+            registeredNames += slot.registrations.map(function(reg) {
+                return `${reg.user_first_name} ${reg.user_last_name.charAt(0)}.`;
+            }).join(', ');
+            registeredNames += '</div>';
+        }
         const slotElement = $(`
             <div class="${slotClass}" data-slot-id="${slot.id}">
                 <div class="tsb-slot-info">
@@ -462,6 +470,7 @@
                     <div class="tsb-slot-capacity">
                         ${slot.registered_count}/${slot.capacity} inscrit(s)
                     </div>
+                    ${registeredNames}
                 </div>
                 <div class="tsb-slot-actions">
                     ${actions}
@@ -601,10 +610,19 @@
             status = 'Complet';
         }
         
+        let registeredNames = '';
+        if (slot.registrations && slot.registrations.length > 0) {
+            registeredNames = '<div class="tsb-slot-names-mini">Inscrits : ';
+            registeredNames += slot.registrations.map(function(reg) {
+                return `${reg.user_first_name} ${reg.user_last_name.charAt(0)}.`;
+            }).join(', ');
+            registeredNames += '</div>';
+        }
         const slotElement = $(`
             <div class="${slotClass}" data-slot-id="${slot.id}" title="${status}">
                 <div class="tsb-slot-status-mini">${status}</div>
                 <div class="tsb-slot-capacity-mini">${slot.registered_count}/${slot.capacity}</div>
+                ${registeredNames}
             </div>
         `);
         

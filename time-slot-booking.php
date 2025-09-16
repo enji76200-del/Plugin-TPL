@@ -390,15 +390,7 @@ class TimeSlotBooking {
                                 <input type="text" id="tsb-user-last-name" required>
                             </div>
                         </div>
-                        <div class="tsb-form-group">
-                            <label><?php _e('Email :', 'time-slot-booking'); ?></label>
-                            <input type="email" id="tsb-user-email" required>
-                        </div>
-                        <div class="tsb-form-group">
-                            <label><?php _e('Téléphone :', 'time-slot-booking'); ?></label>
-                            <input type="tel" id="tsb-user-phone">
-                        </div>
-                        <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('S\'inscrire', 'time-slot-booking'); ?></button>
+                            <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('S\'inscrire', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
             </div>
@@ -410,16 +402,7 @@ class TimeSlotBooking {
                     <h3><?php _e('Se désinscrire du créneau', 'time-slot-booking'); ?></h3>
                     <form id="tsb-unregister-form">
                         <input type="hidden" id="tsb-unregister-slot-id">
-                        <div class="tsb-form-group">
-                            <label><?php _e('Email de confirmation:', 'time-slot-booking'); ?></label>
-                            <input type="email" id="tsb-unregister-email" required>
-                            <small><?php _e('Entrez votre email pour confirmer la désinscription', 'time-slot-booking'); ?></small>
-                        </div>
-                        <div class="tsb-form-group">
-                            <label><?php _e('Raison (optionnelle):', 'time-slot-booking'); ?></label>
-                            <textarea id="tsb-unregister-reason" rows="3" placeholder="<?php _e('Pourquoi vous désinscrivez-vous ?', 'time-slot-booking'); ?>"></textarea>
-                        </div>
-                        <button type="submit" class="tsb-btn tsb-btn-danger"><?php _e('Me désinscrire', 'time-slot-booking'); ?></button>
+                            <button type="submit" class="tsb-btn tsb-btn-danger"><?php _e('Me désinscrire', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
             </div>
@@ -589,6 +572,21 @@ class TimeSlotBooking {
             ORDER BY s.start_time
         ", $date, $planning_id));
         
+        // Ajout des inscrits formatés pour chaque créneau
+        foreach ($slots as &$slot) {
+            $registrations = $wpdb->get_results($wpdb->prepare(
+                "SELECT user_first_name, user_last_name FROM $registrations_table WHERE slot_id = %d AND expires_at > NOW()",
+                $slot->id
+            ));
+            $slot->registrations = array();
+            foreach ($registrations as $reg) {
+                $slot->registrations[] = array(
+                    'user_first_name' => $reg->user_first_name,
+                    'user_last_name' => $reg->user_last_name,
+                    'display_name' => $reg->user_first_name . ' ' . mb_substr($reg->user_last_name, 0, 1) . '.'
+                );
+            }
+        }
         wp_send_json_success($slots);
     }
     
@@ -696,6 +694,21 @@ class TimeSlotBooking {
             ORDER BY s.date, s.start_time
         ", $start_date, $end_date, $planning_id));
         
+        // Ajout des inscrits formatés pour chaque créneau
+        foreach ($slots as &$slot) {
+            $registrations = $wpdb->get_results($wpdb->prepare(
+                "SELECT user_first_name, user_last_name FROM $registrations_table WHERE slot_id = %d AND expires_at > NOW()",
+                $slot->id
+            ));
+            $slot->registrations = array();
+            foreach ($registrations as $reg) {
+                $slot->registrations[] = array(
+                    'user_first_name' => $reg->user_first_name,
+                    'user_last_name' => $reg->user_last_name,
+                    'display_name' => $reg->user_first_name . ' ' . mb_substr($reg->user_last_name, 0, 1) . '.'
+                );
+            }
+        }
         wp_send_json_success($slots);
     }
     
