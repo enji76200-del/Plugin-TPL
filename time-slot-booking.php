@@ -214,16 +214,24 @@ class TimeSlotBooking {
                 )
             );
             
+            $planning_ids = array();
             foreach ($default_plannings as $planning) {
-                $wpdb->insert(
+                $result = $wpdb->insert(
                     $table_plannings,
                     $planning,
                     array('%s', '%s', '%d', '%s', '%s')
                 );
+                if ($result !== false) {
+                    $planning_ids[] = $wpdb->insert_id;
+                }
             }
             
-            // Generate default weekly time slots for all plannings
-            $this->generate_default_weekly_slots();
+            // Generate default weekly time slots for all created plannings
+            if (!empty($planning_ids)) {
+                foreach ($planning_ids as $planning_id) {
+                    $this->generate_weekly_slots_for_planning($planning_id);
+                }
+            }
         }
     }
     
@@ -282,7 +290,7 @@ class TimeSlotBooking {
                 </div>
             </div>
             
-            <?php if ($atts['show_admin'] || current_user_can('manage_options')): ?>
+            <?php if (current_user_can('manage_options')): ?>
             <div class="tsb-admin-controls">
                 <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
                     <?php _e('Ajouter un créneau', 'time-slot-booking'); ?>
@@ -711,100 +719,7 @@ class TimeSlotBooking {
         wp_send_json_success($registrations);
     }
     
-    /**
-     * Generate default weekly time slots
-     */
-    public function generate_default_weekly_slots() {
-        global $wpdb;
-        $plannings_table = $wpdb->prefix . 'tsb_plannings';
-        $slots_table = $wpdb->prefix . 'tsb_time_slots';
-        
-        // Default weekly template
-        $weekly_template = array(
-            'lundi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'mardi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'mercredi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'jeudi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'vendredi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'samedi' => array(
-                array('06:00', '07:00', 3),
-                array('07:30', '08:30', 3),
-                array('08:30', '10:00', 2),
-                array('10:00', '11:30', 2),
-                array('11:30', '13:00', 2),
-                array('13:00', '14:30', 2),
-                array('14:30', '16:00', 2),
-                array('16:00', '17:30', 2),
-                array('17:30', '19:00', 3),
-                array('19:00', '20:00', 3)
-            ),
-            'dimanche' => array()
-        );
-        
-        // Get all active plannings
-        $plannings = $wpdb->get_results("SELECT id FROM $plannings_table WHERE is_active = 1");
-        
-        // Generate slots for next 7 days for each planning
-        foreach ($plannings as $planning) {
-            $this->generate_weekly_slots_for_planning($planning->id, $weekly_template);
-        }
-    }
-    
+
     /**
      * Generate weekly slots for a specific planning
      */
