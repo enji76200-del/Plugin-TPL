@@ -349,6 +349,16 @@ class TimeSlotBooking {
                 }
             }
         }
+        
+        // Mettre à jour le nom du planning principal si nécessaire
+        $main_planning = $wpdb->get_row("SELECT * FROM $table_plannings WHERE id = 1");
+        if ($main_planning && $main_planning->name !== 'Gare-Станция') {
+            $wpdb->update(
+                $table_plannings,
+                array('name' => 'Gare-Станция'),
+                array('id' => 1)
+            );
+        }
     }
     
     public function cleanup() {
@@ -393,7 +403,7 @@ class TimeSlotBooking {
             <div class="tsb-view-controls">
                 <div class="tsb-view-toggle">
                     <button class="tsb-view-btn active" data-view="daily"><?php _e('Vue journalière', 'time-slot-booking'); ?></button>
-                    <button class="tsb-view-btn" data-view="weekly"><?php _e('Vue hebdomadaire', 'time-slot-booking'); ?></button>
+                    <button class="tsb-view-btn" data-view="weekly"><?php _e('Vue Large', 'time-slot-booking'); ?></button>
                 </div>
                 
                 <div class="tsb-date-navigation">
@@ -434,16 +444,10 @@ class TimeSlotBooking {
             <!-- Weekly View -->
             <div id="tsb-weekly-view" class="tsb-weekly-view" style="display: none;">
                 <table class="tsb-weekly-table">
-                    <thead>
+                    <thead id="tsb-weekly-table-head">
                         <tr>
                             <th class="time-header"><?php _e('Horaires', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Lundi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Mardi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Mercredi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Jeudi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Vendredi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Samedi', 'time-slot-booking'); ?></th>
-                            <th><?php _e('Dimanche', 'time-slot-booking'); ?></th>
+                            <!-- Dynamic day headers will be loaded here -->
                         </tr>
                     </thead>
                     <tbody id="tsb-weekly-table-body">

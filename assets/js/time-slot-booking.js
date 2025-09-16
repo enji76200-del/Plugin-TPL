@@ -486,9 +486,11 @@
      */
     function loadWeeklyView() {
         showLoading('#tsb-weekly-table-body');
-        
-        const startDateString = formatDateForServer(currentWeekStart);
-        
+
+        // Utiliser la date d'aujourd'hui pour la vue large
+        const today = new Date();
+        const startDateString = formatDateForServer(today);
+
         $.ajax({
             url: tsb_ajax.ajax_url,
             type: 'POST',
@@ -539,12 +541,12 @@
 
         slots.forEach(slot => {
             const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
-            // Calculer l'index du jour par rapport au lundi
+            // Calculer l'index du jour par rapport à aujourd'hui
             const slotDate = new Date(slot.date);
-            const weekStart = new Date(currentWeekStart);
-            weekStart.setHours(0,0,0,0);
+            const today = new Date();
+            today.setHours(0,0,0,0);
             slotDate.setHours(0,0,0,0);
-            const dayOffset = Math.round((slotDate - weekStart) / (1000 * 60 * 60 * 24));
+            const dayOffset = Math.round((slotDate - today) / (1000 * 60 * 60 * 24));
 
             timeSlots.add(timeKey);
 
@@ -562,11 +564,12 @@
         // Sort time slots
         const sortedTimeSlots = Array.from(timeSlots).sort();
 
-        // Générer les dates des 8 jours (lundi à lundi suivant)
+        // Générer les dates des 7 jours consécutifs à partir d'aujourd'hui
         const days = [];
-        for (let i = 0; i < 8; i++) {
-            const d = new Date(currentWeekStart);
-            d.setDate(d.getDate() + i);
+        const today = new Date();
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
             days.push(d);
         }
 
@@ -575,7 +578,7 @@
         thead.empty();
         thead.append('<th class="time-header">Horaires</th>');
         days.forEach((date, idx) => {
-            const options = { weekday: 'long', day: 'numeric', month: 'short' };
+            const options = { weekday: 'short', day: 'numeric', month: 'short' };
             thead.append(`<th>${date.toLocaleDateString('fr-FR', options)}</th>`);
         });
 
@@ -585,8 +588,8 @@
             const row = $('<tr></tr>');
             row.append(`<td class="time-cell">${startTime}<br><small>${endTime}</small></td>`);
 
-            // Add cells for each of the 8 days
-            for (let day = 0; day < 8; day++) {
+            // Add cells for each of the 7 days
+            for (let day = 0; day < 7; day++) {
                 const dayCell = $('<td class="tsb-weekly-slot"></td>');
                 if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][day]) {
                     slotsByTimeAndDay[timeKey][day].forEach(slot => {
