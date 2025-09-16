@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Slot Booking Plugin Test</title>
+    <link rel="stylesheet" href="assets/css/time-slot-booking.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f6f8fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #24292f;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Plugin de Réservation de Créneaux Horaires - Test</h1>
+        
+        <!-- Plugin Interface -->
+        <div id="tsb-booking-container">
+            <div class="tsb-date-navigation">
+                <button id="tsb-prev-date" class="tsb-nav-btn">&larr;</button>
+                <span id="tsb-current-date">Chargement...</span>
+                <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
+            </div>
+            
+            <!-- Admin controls (visible for testing) -->
+            <div class="tsb-admin-controls">
+                <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
+                    Ajouter un Créneau
+                </button>
+            </div>
+            
+            <div id="tsb-booking-table">
+                <table class="tsb-table">
+                    <thead>
+                        <tr>
+                            <th class="tsb-th">Horaires</th>
+                            <th class="tsb-th">Créneaux</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tsb-table-body">
+                        <!-- Sample data for testing -->
+                        <tr>
+                            <td class="tsb-time-cell" data-label="Horaires">09:00 - 10:00</td>
+                            <td class="tsb-slot-cell" data-label="Créneaux">
+                                <div class="tsb-slots-container">
+                                    <div class="tsb-slot-item tsb-slot-available" data-slot-id="1">
+                                        <div class="tsb-slot-info">
+                                            <div class="tsb-slot-status">Disponible</div>
+                                            <div class="tsb-slot-capacity">2/5 inscrit(s)</div>
+                                        </div>
+                                        <div class="tsb-slot-actions">
+                                            <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="1">S'inscrire</button>
+                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="1">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="tsb-time-cell" data-label="Horaires">10:00 - 11:00</td>
+                            <td class="tsb-slot-cell" data-label="Créneaux">
+                                <div class="tsb-slots-container">
+                                    <div class="tsb-slot-item tsb-slot-full" data-slot-id="2">
+                                        <div class="tsb-slot-info">
+                                            <div class="tsb-slot-status">Complet</div>
+                                            <div class="tsb-slot-capacity">3/3 inscrit(s)</div>
+                                        </div>
+                                        <div class="tsb-slot-actions">
+                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="2">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="tsb-time-cell" data-label="Horaires">14:00 - 15:00</td>
+                            <td class="tsb-slot-cell" data-label="Créneaux">
+                                <div class="tsb-slots-container">
+                                    <div class="tsb-slot-item tsb-slot-available" data-slot-id="3">
+                                        <div class="tsb-slot-info">
+                                            <div class="tsb-slot-status">Disponible</div>
+                                            <div class="tsb-slot-capacity">0/4 inscrit(s)</div>
+                                        </div>
+                                        <div class="tsb-slot-actions">
+                                            <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="3">S'inscrire</button>
+                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="3">Supprimer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Add Time Slot Modal -->
+            <div id="tsb-add-slot-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3>Ajouter un Créneau</h3>
+                    <form id="tsb-add-slot-form">
+                        <div class="tsb-form-group">
+                            <label>Heure de début :</label>
+                            <input type="time" id="tsb-start-time" required>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label>Heure de fin :</label>
+                            <input type="time" id="tsb-end-time" required>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label>Capacité :</label>
+                            <input type="number" id="tsb-capacity" min="1" value="1" required>
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-primary">Ajouter le Créneau</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- User Registration Modal -->
+            <div id="tsb-register-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3>S'inscrire au Créneau</h3>
+                    <form id="tsb-register-form">
+                        <input type="hidden" id="tsb-register-slot-id">
+                        <div class="tsb-form-group">
+                            <label>Nom :</label>
+                            <input type="text" id="tsb-user-name" required>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label>Email :</label>
+                            <input type="email" id="tsb-user-email" required>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label>Téléphone :</label>
+                            <input type="tel" id="tsb-user-phone">
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-primary">S'inscrire</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize without jQuery
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date display
+            const currentDate = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            document.getElementById('tsb-current-date').textContent = currentDate.toLocaleDateString('fr-FR', options);
+            
+            // Modal functionality
+            function hideAllModals() {
+                document.querySelectorAll('.tsb-modal').forEach(modal => {
+                    modal.style.display = 'none';
+                });
+            }
+            
+            // Close buttons
+            document.querySelectorAll('.tsb-close').forEach(button => {
+                button.addEventListener('click', hideAllModals);
+            });
+            
+            // Add slot button
+            document.getElementById('tsb-add-slot-btn').addEventListener('click', function() {
+                document.getElementById('tsb-add-slot-modal').style.display = 'block';
+            });
+            
+            // Register buttons
+            document.querySelectorAll('.tsb-register-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const slotId = this.getAttribute('data-slot-id');
+                    document.getElementById('tsb-register-slot-id').value = slotId;
+                    document.getElementById('tsb-register-modal').style.display = 'block';
+                });
+            });
+            
+            // Remove buttons
+            document.querySelectorAll('.tsb-remove-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    if (confirm('Êtes-vous sûr de vouloir supprimer ce créneau ?')) {
+                        const slotItem = this.closest('.tsb-slot-item');
+                        slotItem.style.transition = 'opacity 0.3s';
+                        slotItem.style.opacity = '0';
+                        setTimeout(() => {
+                            slotItem.remove();
+                        }, 300);
+                    }
+                });
+            });
+            
+            // Form submissions
+            document.getElementById('tsb-add-slot-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Nouveau créneau ajouté ! (mode test)');
+                hideAllModals();
+                this.reset();
+            });
+            
+            document.getElementById('tsb-register-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Inscription réussie ! (mode test)');
+                hideAllModals();
+                this.reset();
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('tsb-modal')) {
+                    hideAllModals();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
