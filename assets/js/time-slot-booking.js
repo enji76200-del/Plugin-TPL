@@ -490,7 +490,6 @@
         // Utiliser la date d'aujourd'hui pour la vue large
         const today = new Date();
         const startDateString = formatDateForServer(today);
-        console.log('Sending start_date to server:', startDateString);
 
         $.ajax({
             url: tsb_ajax.ajax_url,
@@ -552,7 +551,7 @@
             const diffTime = slotDate.getTime() - weekStartDate.getTime();
             const dayOffset = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-            console.log('Slot:', slot.start_time, '-', slot.end_time, 'Date:', slot.date, 'WeekStart:', startDateString, 'dayOffset:', dayOffset, 'diffTime:', diffTime);
+            console.log('Slot:', slot.start_time, '-', slot.end_time, 'Date:', slot.date, 'WeekStart:', startDateString, 'dayOffset:', dayOffset);
 
             timeSlots.add(timeKey);
 
