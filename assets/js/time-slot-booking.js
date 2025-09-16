@@ -189,6 +189,19 @@
         $(document).on('click', '.tsb-register-btn', showRegisterModal);
         $(document).on('submit', '#tsb-register-form', handleUserRegistration);
         
+        // User unregistration
+        $(document).on('click', '.tsb-unregister-btn', showUnregisterModal);
+        $(document).on('submit', '#tsb-unregister-form', handleUserUnregistration);
+        
+        // Block slot functionality
+        $(document).on('click', '.tsb-block-btn', showBlockSlotModal);
+        $(document).on('click', '.tsb-unblock-btn', showBlockSlotModal);
+        $(document).on('submit', '#tsb-block-slot-form', handleBlockSlot);
+        $(document).on('change', '#tsb-block-checkbox', toggleBlockReasonField);
+        
+        // Block mode toggle
+        $(document).on('click', '#tsb-block-mode-btn', toggleBlockingMode);
+        
         // Remove time slot
         $(document).on('click', '.tsb-remove-btn', handleRemoveSlot);
         
@@ -306,21 +319,52 @@
     function renderSlotItem(slot, containerId) {
         const container = $(`#slots-${containerId}`);
         const isAvailable = parseInt(slot.registered_count) < parseInt(slot.capacity);
-        const slotClass = isAvailable ? 'tsb-slot-available' : 'tsb-slot-full';
+        const isBlocked = parseInt(slot.is_blocked || 0) === 1;
+        
+        let slotClass = 'tsb-slot-item ';
+        if (isBlocked) {
+            slotClass += 'tsb-slot-blocked';
+        } else if (isAvailable) {
+            slotClass += 'tsb-slot-available';
+        } else {
+            slotClass += 'tsb-slot-full';
+        }
+        
+        let status = '';
+        if (isBlocked) {
+            status = `Bloqué${slot.block_reason ? ` (${slot.block_reason})` : ''}`;
+        } else if (isAvailable) {
+            status = 'Disponible';
+        } else {
+            status = 'Complet';
+        }
+        
+        let actions = '';
+        if (!isBlocked && isAvailable) {
+            actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="${slot.id}">S'inscrire</button>`;
+        }
+        if (!isBlocked && parseInt(slot.registered_count) > 0) {
+            actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="${slot.id}">Me désinscrire</button>`;
+        }
+        if (isAdmin) {
+            if (isBlocked) {
+                actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-unblock-btn" data-slot-id="${slot.id}">Débloquer</button>`;
+            } else {
+                actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="${slot.id}">Bloquer</button>`;
+            }
+            actions += `<button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="${slot.id}">Supprimer</button>`;
+        }
         
         const slotElement = $(`
-            <div class="tsb-slot-item ${slotClass}" data-slot-id="${slot.id}">
+            <div class="${slotClass}" data-slot-id="${slot.id}">
                 <div class="tsb-slot-info">
-                    <div class="tsb-slot-status">
-                        ${isAvailable ? 'Disponible' : 'Complet'}
-                    </div>
+                    <div class="tsb-slot-status">${status}</div>
                     <div class="tsb-slot-capacity">
                         ${slot.registered_count}/${slot.capacity} inscrit(s)
                     </div>
                 </div>
                 <div class="tsb-slot-actions">
-                    ${isAvailable ? `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="${slot.id}">S'inscrire</button>` : ''}
-                    ${isAdmin ? `<button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="${slot.id}">Supprimer</button>` : ''}
+                    ${actions}
                 </div>
             </div>
         `);
@@ -493,6 +537,67 @@
     }
 
     /**
+     * Show user unregistration modal
+     */
+    function showUnregisterModal(event) {
+        const slotId = $(event.target).data('slot-id');
+        $('#tsb-unregister-slot-id').val(slotId);
+        $('#tsb-unregister-modal').show();
+        $('#tsb-unregister-email').focus();
+    }
+
+    /**
+     * Show block slot modal
+     */
+    function showBlockSlotModal(event) {
+        const slotId = $(event.target).data('slot-id');
+        const isCurrentlyBlocked = $(event.target).hasClass('tsb-unblock-btn');
+        
+        $('#tsb-block-slot-id').val(slotId);
+        $('#tsb-block-checkbox').prop('checked', !isCurrentlyBlocked);
+        $('#tsb-block-action').val(isCurrentlyBlocked ? 'unblock' : 'block');
+        
+        if (isCurrentlyBlocked) {
+            $('#tsb-block-reason-group').hide();
+        } else {
+            $('#tsb-block-reason-group').show();
+        }
+        
+        $('#tsb-block-slot-modal').show();
+        if (!isCurrentlyBlocked) {
+            $('#tsb-block-reason').focus();
+        }
+    }
+
+    /**
+     * Toggle block reason field
+     */
+    function toggleBlockReasonField() {
+        const isBlocked = $('#tsb-block-checkbox').is(':checked');
+        if (isBlocked) {
+            $('#tsb-block-reason-group').show();
+        } else {
+            $('#tsb-block-reason-group').hide();
+        }
+    }
+
+    /**
+     * Toggle blocking mode
+     */
+    function toggleBlockingMode() {
+        blockingMode = !blockingMode;
+        const btn = $('#tsb-block-mode-btn');
+        
+        if (blockingMode) {
+            btn.removeClass('tsb-btn-warning').addClass('tsb-btn-danger').text('Mode normal');
+            showSuccess('Mode blocage activé. Cliquez sur les créneaux pour les bloquer/débloquer.');
+        } else {
+            btn.removeClass('tsb-btn-danger').addClass('tsb-btn-warning').text('Mode blocage');
+            showSuccess('Mode blocage désactivé.');
+        }
+    }
+
+    /**
      * Close all modals
      */
     function closeModal() {
@@ -500,6 +605,9 @@
         // Reset forms
         $('#tsb-add-slot-form')[0].reset();
         $('#tsb-register-form')[0].reset();
+        $('#tsb-unregister-form')[0].reset();
+        $('#tsb-block-slot-form')[0].reset();
+        $('#tsb-block-reason-group').show(); // Reset to default state
     }
 
     /**
@@ -714,6 +822,86 @@
     function isValidTime(time) {
         const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
         return timeRegex.test(time);
+    }
+
+    /**
+     * Handle user unregistration
+     */
+    function handleUserUnregistration(event) {
+        event.preventDefault();
+        
+        const slotId = $('#tsb-unregister-slot-id').val();
+        const userEmail = $('#tsb-unregister-email').val();
+        const reason = $('#tsb-unregister-reason').val();
+        
+        if (!slotId || !userEmail) {
+            showError('Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'unregister_user_slot',
+                slot_id: slotId,
+                user_email: userEmail,
+                reason: reason,
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess('Désinscription réussie !');
+                    closeModal();
+                    loadCurrentView();
+                } else {
+                    showError(response.data || 'Erreur lors de la désinscription.');
+                }
+            },
+            error: function() {
+                showError('Erreur de communication avec le serveur.');
+            }
+        });
+    }
+
+    /**
+     * Handle slot blocking/unblocking
+     */
+    function handleBlockSlot(event) {
+        event.preventDefault();
+        
+        const slotId = $('#tsb-block-slot-id').val();
+        const isBlocked = $('#tsb-block-checkbox').is(':checked') ? 1 : 0;
+        const blockReason = $('#tsb-block-reason').val();
+        
+        if (!slotId) {
+            showError('Erreur: ID du créneau manquant.');
+            return;
+        }
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'toggle_slot_block',
+                slot_id: slotId,
+                is_blocked: isBlocked,
+                block_reason: blockReason,
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess(response.data);
+                    closeModal();
+                    loadCurrentView();
+                } else {
+                    showError(response.data || 'Erreur lors de la modification du créneau.');
+                }
+            },
+            error: function() {
+                showError('Erreur de communication avec le serveur.');
+            }
+        });
     }
 
 })(jQuery);

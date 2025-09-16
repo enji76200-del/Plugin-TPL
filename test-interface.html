@@ -78,6 +78,8 @@
                                             </div>
                                             <div class="tsb-slot-actions">
                                                 <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="1">S'inscrire</button>
+                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="1">Me désinscrire</button>
+                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="1">Bloquer</button>
                                                 <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="1">Supprimer</button>
                                             </div>
                                         </div>
@@ -94,6 +96,8 @@
                                                 <div class="tsb-slot-capacity">3/3 inscrit(s)</div>
                                             </div>
                                             <div class="tsb-slot-actions">
+                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="2">Me désinscrire</button>
+                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="2">Bloquer</button>
                                                 <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="2">Supprimer</button>
                                             </div>
                                         </div>
@@ -111,7 +115,25 @@
                                             </div>
                                             <div class="tsb-slot-actions">
                                                 <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="3">S'inscrire</button>
+                                                <button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="3">Bloquer</button>
                                                 <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="3">Supprimer</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="tsb-time-cell" data-label="Horaires">16:00 - 17:00</td>
+                                <td class="tsb-slot-cell" data-label="Créneaux">
+                                    <div class="tsb-slots-container">
+                                        <div class="tsb-slot-item tsb-slot-blocked" data-slot-id="4">
+                                            <div class="tsb-slot-info">
+                                                <div class="tsb-slot-status">Bloqué (Maintenance)</div>
+                                                <div class="tsb-slot-capacity">0/2 inscrit(s)</div>
+                                            </div>
+                                            <div class="tsb-slot-actions">
+                                                <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-unblock-btn" data-slot-id="4">Débloquer</button>
+                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="4">Supprimer</button>
                                             </div>
                                         </div>
                                     </div>
@@ -243,6 +265,50 @@
                     </form>
                 </div>
             </div>
+            
+            <!-- User Unregistration Modal -->
+            <div id="tsb-unregister-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3>Se désinscrire du créneau</h3>
+                    <form id="tsb-unregister-form">
+                        <input type="hidden" id="tsb-unregister-slot-id">
+                        <div class="tsb-form-group">
+                            <label>Email de confirmation :</label>
+                            <input type="email" id="tsb-unregister-email" required>
+                            <small>Entrez votre email pour confirmer la désinscription</small>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label>Raison (optionnelle) :</label>
+                            <textarea id="tsb-unregister-reason" rows="3" placeholder="Pourquoi vous désinscrivez-vous ?"></textarea>
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-danger">Me désinscrire</button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Block Slot Modal -->
+            <div id="tsb-block-slot-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3>Bloquer/Débloquer le créneau</h3>
+                    <form id="tsb-block-slot-form">
+                        <input type="hidden" id="tsb-block-slot-id">
+                        <input type="hidden" id="tsb-block-action">
+                        <div class="tsb-form-group">
+                            <label>
+                                <input type="checkbox" id="tsb-block-checkbox"> 
+                                Bloquer ce créneau
+                            </label>
+                        </div>
+                        <div class="tsb-form-group" id="tsb-block-reason-group">
+                            <label>Raison du blocage :</label>
+                            <input type="text" id="tsb-block-reason" placeholder="Ex: Maintenance, Congés, etc.">
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-warning">Appliquer</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -340,6 +406,48 @@
                 });
             });
             
+            // Unregister buttons
+            document.querySelectorAll('.tsb-unregister-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const slotId = this.getAttribute('data-slot-id');
+                    document.getElementById('tsb-unregister-slot-id').value = slotId;
+                    document.getElementById('tsb-unregister-modal').style.display = 'block';
+                });
+            });
+            
+            // Block buttons
+            document.querySelectorAll('.tsb-block-btn, .tsb-unblock-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const slotId = this.getAttribute('data-slot-id');
+                    const isCurrentlyBlocked = this.classList.contains('tsb-unblock-btn');
+                    
+                    document.getElementById('tsb-block-slot-id').value = slotId;
+                    document.getElementById('tsb-block-checkbox').checked = !isCurrentlyBlocked;
+                    document.getElementById('tsb-block-action').value = isCurrentlyBlocked ? 'unblock' : 'block';
+                    
+                    const reasonGroup = document.getElementById('tsb-block-reason-group');
+                    if (isCurrentlyBlocked) {
+                        reasonGroup.style.display = 'none';
+                    } else {
+                        reasonGroup.style.display = 'block';
+                    }
+                    
+                    document.getElementById('tsb-block-slot-modal').style.display = 'block';
+                });
+            });
+            
+            // Block mode toggle
+            document.getElementById('tsb-block-mode-btn').addEventListener('click', function() {
+                const isBlockMode = this.textContent.includes('normal');
+                if (isBlockMode) {
+                    this.textContent = 'Mode blocage';
+                    this.className = 'tsb-btn tsb-btn-warning';
+                } else {
+                    this.textContent = 'Mode normal';
+                    this.className = 'tsb-btn tsb-btn-danger';
+                }
+            });
+            
             // Remove buttons
             document.querySelectorAll('.tsb-remove-btn').forEach(button => {
                 button.addEventListener('click', function() {
@@ -365,6 +473,22 @@
             document.getElementById('tsb-register-form').addEventListener('submit', function(e) {
                 e.preventDefault();
                 alert('Inscription réussie ! (mode test)');
+                hideAllModals();
+                this.reset();
+            });
+            
+            document.getElementById('tsb-unregister-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Désinscription réussie ! (mode test)');
+                hideAllModals();
+                this.reset();
+            });
+            
+            document.getElementById('tsb-block-slot-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const isBlocked = document.getElementById('tsb-block-checkbox').checked;
+                const message = isBlocked ? 'Créneau bloqué !' : 'Créneau débloqué !';
+                alert(message + ' (mode test)');
                 hideAllModals();
                 this.reset();
             });
