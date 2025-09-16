@@ -1,0 +1,441 @@
+/* Time Slot Booking Plugin - Excel-style CSS */
+
+#tsb-booking-container {
+    max-width: 100%;
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Date Navigation */
+.tsb-date-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    background: #f6f8fa;
+    border-bottom: 1px solid #d0d7de;
+    gap: 20px;
+}
+
+.tsb-nav-btn {
+    background: #0969da;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.2s;
+}
+
+.tsb-nav-btn:hover {
+    background: #0860ca;
+}
+
+.tsb-nav-btn:disabled {
+    background: #8c959f;
+    cursor: not-allowed;
+}
+
+#tsb-current-date {
+    font-weight: bold;
+    font-size: 18px;
+    color: #24292f;
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Admin Controls */
+.tsb-admin-controls {
+    padding: 15px;
+    background: #f6f8fa;
+    border-bottom: 1px solid #d0d7de;
+    text-align: right;
+}
+
+/* Table Styling - Excel-like */
+.tsb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: white;
+}
+
+.tsb-th {
+    background: #f1f8ff;
+    color: #24292f;
+    font-weight: 600;
+    padding: 12px 16px;
+    text-align: left;
+    border: 1px solid #d0d7de;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.tsb-table tbody tr {
+    border-bottom: 1px solid #d0d7de;
+}
+
+.tsb-table tbody tr:hover {
+    background: #f6f8fa;
+}
+
+.tsb-table td {
+    padding: 12px 16px;
+    border: 1px solid #d0d7de;
+    vertical-align: middle;
+}
+
+.tsb-time-cell {
+    font-weight: 500;
+    color: #0969da;
+    white-space: nowrap;
+    background: #f6f8fa;
+    width: 150px;
+}
+
+.tsb-slot-cell {
+    position: relative;
+}
+
+/* Time Slot Items */
+.tsb-slot-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    margin: 2px 0;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: #ffffff;
+    transition: all 0.2s;
+}
+
+.tsb-slot-item:hover {
+    border-color: #0969da;
+    box-shadow: 0 2px 4px rgba(9, 105, 218, 0.1);
+}
+
+.tsb-slot-available {
+    border-color: #1a7f37;
+    background: #f6ffed;
+}
+
+.tsb-slot-full {
+    border-color: #d1242f;
+    background: #fff5f5;
+    opacity: 0.7;
+}
+
+.tsb-slot-info {
+    flex-grow: 1;
+}
+
+.tsb-slot-capacity {
+    font-size: 12px;
+    color: #656d76;
+    margin-top: 2px;
+}
+
+.tsb-slot-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Buttons */
+.tsb-btn {
+    padding: 6px 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    background: white;
+    color: #24292f;
+}
+
+.tsb-btn:hover {
+    background: #f3f4f6;
+    border-color: #8c959f;
+}
+
+.tsb-btn-primary {
+    background: #0969da;
+    color: white;
+    border-color: #0969da;
+}
+
+.tsb-btn-primary:hover {
+    background: #0860ca;
+    border-color: #0860ca;
+}
+
+.tsb-btn-success {
+    background: #1a7f37;
+    color: white;
+    border-color: #1a7f37;
+}
+
+.tsb-btn-success:hover {
+    background: #116329;
+    border-color: #116329;
+}
+
+.tsb-btn-danger {
+    background: #d1242f;
+    color: white;
+    border-color: #d1242f;
+}
+
+.tsb-btn-danger:hover {
+    background: #a40e26;
+    border-color: #a40e26;
+}
+
+.tsb-btn-small {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+/* Modal Styling */
+.tsb-modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+}
+
+.tsb-modal-content {
+    background-color: #ffffff;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #d0d7de;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 12px 28px rgba(140, 149, 159, 0.3);
+    position: relative;
+}
+
+.tsb-close {
+    color: #656d76;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
+.tsb-close:hover {
+    color: #24292f;
+}
+
+.tsb-modal h3 {
+    margin: 0 0 20px 0;
+    color: #24292f;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+/* Form Styling */
+.tsb-form-group {
+    margin-bottom: 16px;
+}
+
+.tsb-form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #24292f;
+}
+
+.tsb-form-group input,
+.tsb-form-group select,
+.tsb-form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.tsb-form-group input:focus,
+.tsb-form-group select:focus,
+.tsb-form-group textarea:focus {
+    outline: none;
+    border-color: #0969da;
+    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+/* Empty State */
+.tsb-empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #656d76;
+}
+
+.tsb-empty-state h4 {
+    margin: 0 0 8px 0;
+    color: #24292f;
+}
+
+/* Loading State */
+.tsb-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #656d76;
+}
+
+.tsb-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0969da;
+    border-radius: 50%;
+    animation: tsb-spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+@keyframes tsb-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #tsb-booking-container {
+        margin: 10px 0;
+    }
+    
+    .tsb-date-navigation {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .tsb-table {
+        font-size: 12px;
+    }
+    
+    .tsb-table td,
+    .tsb-th {
+        padding: 8px 12px;
+    }
+    
+    .tsb-time-cell {
+        width: 120px;
+    }
+    
+    .tsb-slot-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .tsb-slot-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .tsb-modal-content {
+        margin: 5% auto;
+        width: 95%;
+    }
+}
+
+@media (max-width: 480px) {
+    .tsb-table,
+    .tsb-table tbody,
+    .tsb-table tr,
+    .tsb-table td {
+        display: block;
+        width: 100%;
+    }
+    
+    .tsb-table tr {
+        border: 1px solid #d0d7de;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+    
+    .tsb-table td {
+        border: none;
+        border-bottom: 1px solid #d0d7de;
+        position: relative;
+        padding-left: 50%;
+    }
+    
+    .tsb-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 6px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        font-weight: bold;
+        color: #24292f;
+    }
+    
+    .tsb-th {
+        display: none;
+    }
+}
+
+/* Accessibility */
+.tsb-btn:focus,
+.tsb-nav-btn:focus {
+    outline: 2px solid #0969da;
+    outline-offset: 2px;
+}
+
+.screen-reader-text {
+    position: absolute !important;
+    height: 1px;
+    width: 1px;
+    overflow: hidden;
+    clip: rect(1px, 1px, 1px, 1px);
+    white-space: nowrap;
+}
+
+/* Success/Error Messages */
+.tsb-message {
+    padding: 12px 16px;
+    margin: 10px 0;
+    border-radius: 6px;
+    border: 1px solid;
+}
+
+.tsb-message-success {
+    background: #dafbe1;
+    border-color: #1a7f37;
+    color: #116329;
+}
+
+.tsb-message-error {
+    background: #ffebe9;
+    border-color: #d1242f;
+    color: #a40e26;
+}
+
+.tsb-message-warning {
+    background: #fff8c5;
+    border-color: #bf8700;
+    color: #7d4e00;
+}
