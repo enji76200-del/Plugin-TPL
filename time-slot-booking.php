@@ -468,15 +468,15 @@ class TimeSlotBooking {
                     <form id="tsb-add-slot-form">
                         <div class="tsb-form-group">
                             <label><?php _e('Heure de début :', 'time-slot-booking'); ?></label>
-                            <input type="time" id="tsb-start-time" required>
+                            <input type="time" id="tsb-start-time">
                         </div>
                         <div class="tsb-form-group">
                             <label><?php _e('Heure de fin :', 'time-slot-booking'); ?></label>
-                            <input type="time" id="tsb-end-time" required>
+                            <input type="time" id="tsb-end-time">
                         </div>
                         <div class="tsb-form-group">
                             <label><?php _e('Capacité :', 'time-slot-booking'); ?></label>
-                            <input type="number" id="tsb-capacity" min="1" value="1" required>
+                            <input type="number" id="tsb-capacity" min="1" value="1">
                         </div>
                         <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('Ajouter le créneau', 'time-slot-booking'); ?></button>
                     </form>
@@ -603,19 +603,55 @@ class TimeSlotBooking {
     
     public function ajax_register_user_slot() {
         check_ajax_referer('tsb_nonce', 'nonce');
-        
+
         $slot_id = intval($_POST['slot_id']);
         $user_first_name = sanitize_text_field($_POST['user_first_name']);
         $user_last_name = sanitize_text_field($_POST['user_last_name']);
         $user_email = sanitize_email($_POST['user_email']);
         $user_phone = sanitize_text_field($_POST['user_phone']);
-        
+
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';
         $registrations_table = $wpdb->prefix . 'tsb_registrations';
-        
+
         // Check if slot exists and is not blocked
         $slot = $wpdb->get_row($wpdb->prepare("SELECT * FROM $slots_table WHERE id = %d", $slot_id));
+
+        // Pour les créneaux fixes du planning 1, créer le créneau s'il n'existe pas
+        if (!$slot && $slot_id > 1000000000) { // IDs des créneaux fixes sont > 1000000000
+            // Recréer le créneau à partir de l'ID
+            $date_timestamp = intval($slot_id / 100);
+            $index = $slot_id % 100;
+            $date = date('Y-m-d', $date_timestamp);
+
+            $fixed_slots = $this->get_fixed_slots_for_date($date);
+            if (isset($fixed_slots[$index])) {
+                $slot_data = $fixed_slots[$index];
+
+                // Créer le créneau dans la base de données
+                $result = $wpdb->insert(
+                    $slots_table,
+                    array(
+                        'planning_id' => 1,
+                        'date' => $date,
+                        'start_time' => $slot_data->start_time,
+                        'end_time' => $slot_data->end_time,
+                        'capacity' => $slot_data->capacity,
+                        'is_blocked' => 0,
+                        'block_reason' => '',
+                        'is_recurring' => 0,
+                        'recurring_pattern' => ''
+                    ),
+                    array('%d', '%s', '%s', '%s', '%d', '%d', '%s', '%d', '%s')
+                );
+
+                if ($result !== false) {
+                    $slot_id = $wpdb->insert_id;
+                    $slot = $wpdb->get_row($wpdb->prepare("SELECT * FROM $slots_table WHERE id = %d", $slot_id));
+                }
+            }
+        }
+
         if (!$slot) {
             wp_send_json_error(__('Créneau non trouvé', 'time-slot-booking'));
         }
@@ -637,7 +673,7 @@ class TimeSlotBooking {
 
         // Check capacity
         $current_registrations = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*) FROM $registrations_table 
+            SELECT COUNT(*) FROM $registrations_table
             WHERE slot_id = %d AND expires_at > NOW()
         ", $slot_id));
 
@@ -647,14 +683,14 @@ class TimeSlotBooking {
 
         // Check if user is already registered for this slot
         $existing_registration = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*) FROM $registrations_table 
+            SELECT COUNT(*) FROM $registrations_table
             WHERE slot_id = %d AND user_email = %s AND expires_at > NOW()
         ", $slot_id, $user_email));
 
         if ($existing_registration > 0) {
             wp_send_json_error(__('Vous êtes déjà inscrit à ce créneau', 'time-slot-booking'));
         }
-        
+
         $result = $wpdb->insert(
             $registrations_table,
             array(
@@ -666,7 +702,7 @@ class TimeSlotBooking {
             ),
             array('%d', '%s', '%s', '%s', '%s')
         );
-        
+
         if ($result !== false) {
             wp_send_json_success(__('Inscription réussie', 'time-slot-booking'));
         } else {
@@ -676,23 +712,28 @@ class TimeSlotBooking {
     
     public function ajax_get_date_slots() {
         check_ajax_referer('tsb_nonce', 'nonce');
-        
+
         $date = sanitize_text_field($_POST['date']);
         $planning_id = intval($_POST['planning_id'] ?? 1);
-        
+
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';
         $registrations_table = $wpdb->prefix . 'tsb_registrations';
-        
-        $slots = $wpdb->get_results($wpdb->prepare("
-            SELECT s.*, COUNT(r.id) as registered_count
-            FROM $slots_table s
-            LEFT JOIN $registrations_table r ON s.id = r.slot_id AND r.expires_at > NOW()
-            WHERE s.date = %s AND s.planning_id = %d
-            GROUP BY s.id
-            ORDER BY s.start_time
-        ", $date, $planning_id));
-        
+
+        // Pour le planning Gare-Станция (ID 1), utiliser des créneaux fixes par jour de la semaine
+        if ($planning_id == 1) {
+            $slots = $this->get_fixed_slots_for_date($date);
+        } else {
+            $slots = $wpdb->get_results($wpdb->prepare("
+                SELECT s.*, COUNT(r.id) as registered_count
+                FROM $slots_table s
+                LEFT JOIN $registrations_table r ON s.id = r.slot_id AND r.expires_at > NOW()
+                WHERE s.date = %s AND s.planning_id = %d
+                GROUP BY s.id
+                ORDER BY s.start_time
+            ", $date, $planning_id));
+        }
+
         // Ajout des inscrits formatés pour chaque créneau
         foreach ($slots as &$slot) {
             $registrations = $wpdb->get_results($wpdb->prepare(
@@ -710,7 +751,124 @@ class TimeSlotBooking {
         }
         wp_send_json_success($slots);
     }
-    
+
+    /**
+     * Retourne les créneaux fixes pour une date donnée selon le jour de la semaine
+     * pour le planning Gare-Станция
+     */
+    private function get_fixed_slots_for_date($date) {
+        $day_of_week = date('N', strtotime($date)); // 1 = lundi, 7 = dimanche
+
+        $fixed_slots = array();
+
+        switch ($day_of_week) {
+            case 1: // Lundi
+                $fixed_slots = array(
+                    array('start_time' => '06:00', 'end_time' => '07:00', 'capacity' => 3),
+                    array('start_time' => '07:30', 'end_time' => '08:30', 'capacity' => 3),
+                    array('start_time' => '08:30', 'end_time' => '10:00', 'capacity' => 2),
+                    array('start_time' => '10:00', 'end_time' => '11:30', 'capacity' => 2),
+                    array('start_time' => '11:30', 'end_time' => '13:00', 'capacity' => 2),
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 2: // Mardi
+                $fixed_slots = array(
+                    array('start_time' => '07:30', 'end_time' => '08:30', 'capacity' => 3),
+                    array('start_time' => '08:30', 'end_time' => '10:00', 'capacity' => 2),
+                    array('start_time' => '10:00', 'end_time' => '11:30', 'capacity' => 2),
+                    array('start_time' => '11:30', 'end_time' => '13:00', 'capacity' => 2),
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 3: // Mercredi
+                $fixed_slots = array(
+                    array('start_time' => '07:30', 'end_time' => '08:30', 'capacity' => 3),
+                    array('start_time' => '08:30', 'end_time' => '10:00', 'capacity' => 2),
+                    array('start_time' => '10:00', 'end_time' => '11:30', 'capacity' => 2),
+                    array('start_time' => '11:30', 'end_time' => '13:00', 'capacity' => 2),
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 4: // Jeudi
+                $fixed_slots = array(
+                    array('start_time' => '07:30', 'end_time' => '08:30', 'capacity' => 3),
+                    array('start_time' => '08:30', 'end_time' => '10:00', 'capacity' => 2),
+                    array('start_time' => '10:00', 'end_time' => '11:30', 'capacity' => 2),
+                    array('start_time' => '11:30', 'end_time' => '13:00', 'capacity' => 2),
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 5: // Vendredi
+                $fixed_slots = array(
+                    array('start_time' => '07:30', 'end_time' => '08:30', 'capacity' => 3),
+                    array('start_time' => '08:30', 'end_time' => '10:00', 'capacity' => 2),
+                    array('start_time' => '10:00', 'end_time' => '11:30', 'capacity' => 2),
+                    array('start_time' => '11:30', 'end_time' => '13:00', 'capacity' => 2),
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 6: // Samedi
+                $fixed_slots = array(
+                    array('start_time' => '13:00', 'end_time' => '14:30', 'capacity' => 2),
+                    array('start_time' => '14:30', 'end_time' => '16:00', 'capacity' => 2),
+                    array('start_time' => '16:00', 'end_time' => '17:30', 'capacity' => 2),
+                    array('start_time' => '17:30', 'end_time' => '19:00', 'capacity' => 3),
+                    array('start_time' => '19:00', 'end_time' => '20:00', 'capacity' => 3)
+                );
+                break;
+            case 7: // Dimanche
+                $fixed_slots = array(); // Aucun créneau le dimanche
+                break;
+        }
+
+        $slots = array();
+        foreach ($fixed_slots as $index => $slot_data) {
+            // Créer un ID fictif basé sur la date et l'index (plus prévisible)
+            $date_timestamp = strtotime($date);
+            $slot_id = $date_timestamp * 100 + $index; // Format: timestamp_date * 100 + index
+
+            $slot = new stdClass();
+            $slot->id = $slot_id;
+            $slot->planning_id = 1;
+            $slot->date = $date;
+            $slot->start_time = $slot_data['start_time'];
+            $slot->end_time = $slot_data['end_time'];
+            $slot->capacity = $slot_data['capacity'];
+            $slot->is_blocked = 0;
+            $slot->block_reason = '';
+            $slot->is_recurring = 0;
+            $slot->recurring_pattern = '';
+            $slot->created_at = date('Y-m-d H:i:s');
+            $slot->registered_count = 0; // Sera mis à jour par la boucle principale
+            $slot->registrations = array();
+
+            $slots[] = $slot;
+        }
+
+        return $slots;
+    }
+
     public function ajax_unregister_user_slot() {
         check_ajax_referer('tsb_nonce', 'nonce');
         
@@ -795,26 +953,36 @@ class TimeSlotBooking {
     
     public function ajax_get_week_slots() {
         check_ajax_referer('tsb_nonce', 'nonce');
-        
+
         $start_date = sanitize_text_field($_POST['start_date']);
         $planning_id = intval($_POST['planning_id'] ?? 1);
-        
+
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';
         $registrations_table = $wpdb->prefix . 'tsb_registrations';
-        
-        // Get slots for the week (7 days from start_date)
-        $end_date = date('Y-m-d', strtotime($start_date . ' +6 days'));
-        
-        $slots = $wpdb->get_results($wpdb->prepare("
-            SELECT s.*, COUNT(r.id) as registered_count
-            FROM $slots_table s
-            LEFT JOIN $registrations_table r ON s.id = r.slot_id AND r.expires_at > NOW()
-            WHERE s.date BETWEEN %s AND %s AND s.planning_id = %d
-            GROUP BY s.id
-            ORDER BY s.date, s.start_time
-        ", $start_date, $end_date, $planning_id));
-        
+
+        // Pour le planning Gare-Станция (ID 1), utiliser des créneaux fixes par jour de la semaine
+        if ($planning_id == 1) {
+            $slots = array();
+            for ($i = 0; $i < 7; $i++) {
+                $current_date = date('Y-m-d', strtotime($start_date . ' +' . $i . ' days'));
+                $day_slots = $this->get_fixed_slots_for_date($current_date);
+                $slots = array_merge($slots, $day_slots);
+            }
+        } else {
+            // Get slots for the week (7 days from start_date)
+            $end_date = date('Y-m-d', strtotime($start_date . ' +6 days'));
+
+            $slots = $wpdb->get_results($wpdb->prepare("
+                SELECT s.*, COUNT(r.id) as registered_count
+                FROM $slots_table s
+                LEFT JOIN $registrations_table r ON s.id = r.slot_id AND r.expires_at > NOW()
+                WHERE s.date BETWEEN %s AND %s AND s.planning_id = %d
+                GROUP BY s.id
+                ORDER BY s.date, s.start_time
+            ", $start_date, $end_date, $planning_id));
+        }
+
         // Ajout des inscrits formatés pour chaque créneau
         foreach ($slots as &$slot) {
             $registrations = $wpdb->get_results($wpdb->prepare(
