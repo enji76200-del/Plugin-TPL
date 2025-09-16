@@ -307,9 +307,13 @@
         $(document).on('click', '.tsb-register-btn', showRegisterModal);
         $(document).on('submit', '#tsb-register-form', handleUserRegistration);
         
-        // User unregistration
-        $(document).on('click', '.tsb-unregister-btn', showUnregisterModal);
-        $(document).on('submit', '#tsb-unregister-form', handleUserUnregistration);
+        // User unregistration - REMOVED: Now using direct click on names
+        // $(document).on('click', '.tsb-unregister-btn', showUnregisterModal);
+        // $(document).on('submit', '#tsb-unregister-form', handleUserUnregistration);
+        
+        // Direct unregistration by clicking on registered user names
+        $(document).on('click', '.tsb-registered-user', handleDirectUnregistration);
+        $(document).on('click', '.tsb-registered-user-mini', handleDirectUnregistration);
         
         // Block slot functionality
         $(document).on('click', '.tsb-block-btn', showBlockSlotModal);
@@ -462,9 +466,10 @@
         if (!isBlocked && isAvailable) {
             actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="${slot.id}">S'inscrire</button>`;
         }
-        if (!isBlocked && parseInt(slot.registered_count) > 0) {
-            actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="${slot.id}">Me désinscrire</button>`;
-        }
+        // REMOVED: Désinscription button - now using direct click on names
+        // if (!isBlocked && parseInt(slot.registered_count) > 0) {
+        //     actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="${slot.id}">Me désinscrire</button>`;
+        // }
         if (isAdmin) {
             if (isBlocked) {
                 actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-unblock-btn" data-slot-id="${slot.id}">Débloquer</button>`;
@@ -478,7 +483,7 @@
         if (slot.registrations && slot.registrations.length > 0) {
             registeredNames = '<div class="tsb-slot-names">Inscrits : ';
             registeredNames += slot.registrations.map(function(reg) {
-                return `${reg.user_first_name} ${reg.user_last_name.charAt(0)}.`;
+                return `<span class="tsb-registered-user" data-slot-id="${slot.id}" data-first-name="${reg.user_first_name}" data-last-name="${reg.user_last_name}" title="Cliquez pour désinscrire ${reg.user_first_name} ${reg.user_last_name}">${reg.user_first_name} ${reg.user_last_name.charAt(0)}.<span class="tsb-unregister-cross">×</span></span>`;
             }).join(', ');
             registeredNames += '</div>';
         }
@@ -656,7 +661,7 @@
         if (slot.registrations && slot.registrations.length > 0) {
             registeredNames = '<div class="tsb-slot-names-mini">Inscrits : ';
             registeredNames += slot.registrations.map(function(reg) {
-                return `${reg.user_first_name} ${reg.user_last_name.charAt(0)}.`;
+                return `<span class="tsb-registered-user-mini" data-slot-id="${slot.id}" data-first-name="${reg.user_first_name}" data-last-name="${reg.user_last_name}" title="Cliquez pour désinscrire ${reg.user_first_name} ${reg.user_last_name}">${reg.user_first_name} ${reg.user_last_name.charAt(0)}.<span class="tsb-unregister-cross-mini">×</span></span>`;
             }).join(', ');
             registeredNames += '</div>';
         }
@@ -694,16 +699,6 @@
         $('#tsb-register-slot-id').val(slotId);
         $('#tsb-register-modal').show();
         $('#tsb-user-first-name').focus();
-    }
-
-    /**
-     * Show user unregistration modal
-     */
-    function showUnregisterModal(event) {
-        const slotId = $(event.target).data('slot-id');
-        $('#tsb-unregister-slot-id').val(slotId);
-        $('#tsb-unregister-modal').show();
-        $('#tsb-unregister-first-name').focus();
     }
 
     /**
@@ -1020,18 +1015,16 @@
     }
 
     /**
-     * Handle user unregistration
+     * Handle direct unregistration by clicking on user names
      */
-    function handleUserUnregistration(event) {
-        event.preventDefault();
+    function handleDirectUnregistration(event) {
+        event.stopPropagation(); // Prevent triggering parent click handlers
         
-        const slotId = $('#tsb-unregister-slot-id').val();
-        const userFirstName = $('#tsb-unregister-first-name').val();
-        const userLastName = $('#tsb-unregister-last-name').val();
-        const reason = $('#tsb-unregister-reason').val();
+        const slotId = $(event.currentTarget).data('slot-id');
+        const userFirstName = $(event.currentTarget).data('first-name');
+        const userLastName = $(event.currentTarget).data('last-name');
         
-        if (!slotId || !userFirstName || !userLastName) {
-            showError('Veuillez remplir tous les champs obligatoires.');
+        if (!confirm(`Voulez-vous vraiment désinscrire ${userFirstName} ${userLastName} de ce créneau ?`)) {
             return;
         }
         
@@ -1043,13 +1036,11 @@
                 slot_id: slotId,
                 user_first_name: userFirstName,
                 user_last_name: userLastName,
-                reason: reason,
                 nonce: tsb_ajax.nonce
             },
             success: function(response) {
                 if (response.success) {
                     showSuccess('Désinscription réussie !');
-                    closeModal();
                     loadCurrentView();
                 } else {
                     showError(response.data || 'Erreur lors de la désinscription.');

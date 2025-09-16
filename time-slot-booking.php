@@ -501,27 +501,7 @@ class TimeSlotBooking {
                 </div>
             </div>
             
-            <!-- User Unregistration Modal -->
-            <div id="tsb-unregister-modal" class="tsb-modal" style="display: none;">
-                <div class="tsb-modal-content">
-                    <span class="tsb-close">&times;</span>
-                    <h3><?php _e('Se désinscrire du créneau', 'time-slot-booking'); ?></h3>
-                    <form id="tsb-unregister-form">
-                        <input type="hidden" id="tsb-unregister-slot-id">
-                        <div class="tsb-form-row">
-                            <div class="tsb-form-group">
-                                <label><?php _e('Prénom :', 'time-slot-booking'); ?></label>
-                                <input type="text" id="tsb-unregister-first-name" required>
-                            </div>
-                            <div class="tsb-form-group">
-                                <label><?php _e('Nom :', 'time-slot-booking'); ?></label>
-                                <input type="text" id="tsb-unregister-last-name" required>
-                            </div>
-                        </div>
-                            <button type="submit" class="tsb-btn tsb-btn-danger"><?php _e('Me désinscrire', 'time-slot-booking'); ?></button>
-                    </form>
-                </div>
-            </div>
+            <!-- User Unregistration Modal - REMOVED: Direct unregistration by clicking on names -->
             
             <!-- Block Slot Modal -->
             <div id="tsb-block-slot-modal" class="tsb-modal" style="display: none;">

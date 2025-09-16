@@ -1009,3 +1009,47 @@
         box-shadow: none;
     }
 }
+
+/* Direct unregistration styles */
+.tsb-registered-user,
+.tsb-registered-user-mini {
+    display: inline-block;
+    cursor: pointer;
+    padding: 2px 4px;
+    margin: 0 2px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.tsb-registered-user:hover,
+.tsb-registered-user-mini:hover {
+    background-color: #ffe6e6;
+    color: #d32f2f;
+}
+
+.tsb-unregister-cross,
+.tsb-unregister-cross-mini {
+    color: #d32f2f;
+    font-weight: bold;
+    font-size: 14px;
+    margin-left: 4px;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.tsb-registered-user:hover .tsb-unregister-cross,
+.tsb-registered-user-mini:hover .tsb-unregister-cross-mini {
+    color: #b71c1c;
+    transform: scale(1.2);
+}
+
+.tsb-registered-user-mini {
+    font-size: 11px;
+    padding: 1px 3px;
+}
+
+.tsb-unregister-cross-mini {
+    font-size: 12px;
+    margin-left: 2px;
+}
