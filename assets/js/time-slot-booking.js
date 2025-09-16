@@ -143,12 +143,14 @@
         $('.tsb-view-btn').removeClass('active');
         $(`.tsb-view-btn[data-view="${view}"]`).addClass('active');
         
-        // Show/hide appropriate views
+        // Masquer les boutons de navigation en Vue Large
         if (view === 'weekly') {
+            $('#tsb-prev-date, #tsb-next-date').hide();
             $('#tsb-daily-view').hide();
             $('#tsb-weekly-view').show();
             loadWeeklyView();
         } else {
+            $('#tsb-prev-date, #tsb-next-date').show();
             $('#tsb-weekly-view').hide();
             $('#tsb-daily-view').show();
             loadCurrentDateSlots();
@@ -180,6 +182,11 @@
     function initializeDateNavigation() {
         // Set current date
         updateDateDisplay();
+        
+        // Masquer les boutons de navigation si on est en Vue Large
+        if (currentView === 'weekly') {
+            $('#tsb-prev-date, #tsb-next-date').hide();
+        }
         
         // Bind navigation events
         $('#tsb-prev-date').on('click', function() {
@@ -216,6 +223,11 @@
      * Navigate to previous/next week
      */
     function navigateWeek(direction) {
+        // Désactiver la navigation pour Vue Large - toujours afficher la semaine actuelle
+        if (currentView === 'weekly') {
+            return; // Ne rien faire en Vue Large
+        }
+        
         currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
         currentDate = new Date(currentWeekStart);
         updateDateDisplay();
@@ -228,10 +240,17 @@
      */
     function updateDateDisplay() {
         if (currentView === 'weekly') {
-            const endDate = new Date(currentWeekStart);
+            // Pour Vue Large, toujours afficher la semaine actuelle
+            const today = new Date();
+            const weekStart = new Date(today);
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Ajuster pour lundi
+            weekStart.setDate(diff);
+            
+            const endDate = new Date(weekStart);
             endDate.setDate(endDate.getDate() + 6);
             
-            const startStr = currentWeekStart.toLocaleDateString('fr-FR', { 
+            const startStr = weekStart.toLocaleDateString('fr-FR', { 
                 day: 'numeric', 
                 month: 'short' 
             });
@@ -487,7 +506,7 @@
     function loadWeeklyView() {
         showLoading('#tsb-weekly-table-body');
 
-        // Utiliser la date d'aujourd'hui pour la vue large
+        // Toujours utiliser la date d'aujourd'hui pour la Vue Large (pas de navigation)
         const today = new Date();
         const startDateString = formatDateForServer(today);
 
@@ -502,7 +521,7 @@
             },
             success: function(response) {
                 if (response.success) {
-                    renderWeeklySlots(response.data);
+                    renderWeeklySlots(response.data, startDateString);
                 } else {
                     showError(response.data || tsb_ajax.messages.error);
                 }
@@ -519,14 +538,14 @@
     /**
      * Render weekly slots
      */
-    function renderWeeklySlots(slots) {
+    function renderWeeklySlots(slots, startDateString) {
         const tbody = $('#tsb-weekly-table-body');
         tbody.empty();
         
         if (!slots || slots.length === 0) {
             tbody.append(`
                 <tr>
-                    <td colspan="9" class="tsb-empty-state">
+                    <td colspan="8" class="tsb-empty-state">
                         <h4>Aucun créneau disponible</h4>
                         <p>Aucun créneau horaire n'a été défini pour cette semaine.</p>
                     </td>
@@ -684,7 +703,7 @@
         const slotId = $(event.target).data('slot-id');
         $('#tsb-unregister-slot-id').val(slotId);
         $('#tsb-unregister-modal').show();
-        $('#tsb-unregister-email').focus();
+        $('#tsb-unregister-first-name').focus();
     }
 
     /**
@@ -847,10 +866,8 @@
         const slotId = $('#tsb-register-slot-id').val();
         const userFirstName = $('#tsb-user-first-name').val();
         const userLastName = $('#tsb-user-last-name').val();
-        const userEmail = $('#tsb-user-email').val();
-        const userPhone = $('#tsb-user-phone').val();
         
-        if (!slotId || !userFirstName || !userLastName || !userEmail) {
+        if (!slotId || !userFirstName || !userLastName) {
             showError('Veuillez remplir tous les champs obligatoires.');
             return;
         }
@@ -863,8 +880,6 @@
                 slot_id: slotId,
                 user_first_name: userFirstName,
                 user_last_name: userLastName,
-                user_email: userEmail,
-                user_phone: userPhone,
                 nonce: tsb_ajax.nonce
             },
             success: function(response) {
@@ -1011,10 +1026,11 @@
         event.preventDefault();
         
         const slotId = $('#tsb-unregister-slot-id').val();
-        const userEmail = $('#tsb-unregister-email').val();
+        const userFirstName = $('#tsb-unregister-first-name').val();
+        const userLastName = $('#tsb-unregister-last-name').val();
         const reason = $('#tsb-unregister-reason').val();
         
-        if (!slotId || !userEmail) {
+        if (!slotId || !userFirstName || !userLastName) {
             showError('Veuillez remplir tous les champs obligatoires.');
             return;
         }
@@ -1025,7 +1041,8 @@
             data: {
                 action: 'unregister_user_slot',
                 slot_id: slotId,
-                user_email: userEmail,
+                user_first_name: userFirstName,
+                user_last_name: userLastName,
                 reason: reason,
                 nonce: tsb_ajax.nonce
             },

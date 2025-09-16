@@ -508,6 +508,16 @@ class TimeSlotBooking {
                     <h3><?php _e('Se désinscrire du créneau', 'time-slot-booking'); ?></h3>
                     <form id="tsb-unregister-form">
                         <input type="hidden" id="tsb-unregister-slot-id">
+                        <div class="tsb-form-row">
+                            <div class="tsb-form-group">
+                                <label><?php _e('Prénom :', 'time-slot-booking'); ?></label>
+                                <input type="text" id="tsb-unregister-first-name" required>
+                            </div>
+                            <div class="tsb-form-group">
+                                <label><?php _e('Nom :', 'time-slot-booking'); ?></label>
+                                <input type="text" id="tsb-unregister-last-name" required>
+                            </div>
+                        </div>
                             <button type="submit" class="tsb-btn tsb-btn-danger"><?php _e('Me désinscrire', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
@@ -603,8 +613,6 @@ class TimeSlotBooking {
         $slot_id = intval($_POST['slot_id']);
         $user_first_name = sanitize_text_field($_POST['user_first_name']);
         $user_last_name = sanitize_text_field($_POST['user_last_name']);
-        $user_email = sanitize_email($_POST['user_email']);
-        $user_phone = sanitize_text_field($_POST['user_phone']);
 
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';
@@ -677,11 +685,11 @@ class TimeSlotBooking {
             wp_send_json_error(__('Ce créneau est complet', 'time-slot-booking'));
         }
 
-        // Check if user is already registered for this slot
+        // Vérifier si l'utilisateur est déjà inscrit (basé sur prénom + nom)
         $existing_registration = $wpdb->get_var($wpdb->prepare("
             SELECT COUNT(*) FROM $registrations_table
-            WHERE slot_id = %d AND user_email = %s AND expires_at > NOW()
-        ", $slot_id, $user_email));
+            WHERE slot_id = %d AND user_first_name = %s AND user_last_name = %s AND expires_at > NOW()
+        ", $slot_id, $user_first_name, $user_last_name));
 
         if ($existing_registration > 0) {
             wp_send_json_error(__('Vous êtes déjà inscrit à ce créneau', 'time-slot-booking'));
@@ -693,8 +701,8 @@ class TimeSlotBooking {
                 'slot_id' => $slot_id,
                 'user_first_name' => $user_first_name,
                 'user_last_name' => $user_last_name,
-                'user_email' => $user_email,
-                'user_phone' => $user_phone
+                'user_email' => '',
+                'user_phone' => ''
             ),
             array('%d', '%s', '%s', '%s', '%s')
         );
@@ -869,7 +877,8 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         $slot_id = intval($_POST['slot_id']);
-        $user_email = sanitize_email($_POST['user_email']);
+        $user_first_name = sanitize_text_field($_POST['user_first_name']);
+        $user_last_name = sanitize_text_field($_POST['user_last_name']);
         
         global $wpdb;
         $registrations_table = $wpdb->prefix . 'tsb_registrations';
@@ -878,8 +887,8 @@ class TimeSlotBooking {
         // Get the registration to audit
         $registration = $wpdb->get_row($wpdb->prepare("
             SELECT * FROM $registrations_table 
-            WHERE slot_id = %d AND user_email = %s AND expires_at > NOW()
-        ", $slot_id, $user_email));
+            WHERE slot_id = %d AND user_first_name = %s AND user_last_name = %s AND expires_at > NOW()
+        ", $slot_id, $user_first_name, $user_last_name));
         
         if (!$registration) {
             wp_send_json_error(__('Inscription non trouvée', 'time-slot-booking'));
