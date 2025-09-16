@@ -490,6 +490,7 @@
         // Utiliser la date d'aujourd'hui pour la vue large
         const today = new Date();
         const startDateString = formatDateForServer(today);
+        console.log('Sending start_date to server:', startDateString);
 
         $.ajax({
             url: tsb_ajax.ajax_url,
@@ -542,13 +543,16 @@
         slots.forEach(slot => {
             const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
             // Calculer l'index du jour par rapport à aujourd'hui
-            const slotDate = new Date(slot.date);
+            const slotDate = new Date(slot.date + 'T00:00:00'); // S'assurer que c'est traité comme date locale
             const today = new Date();
-            today.setHours(0,0,0,0);
-            slotDate.setHours(0,0,0,0);
-            const dayOffset = Math.round((slotDate - today) / (1000 * 60 * 60 * 24));
+            today.setHours(0, 0, 0, 0);
+            slotDate.setHours(0, 0, 0, 0);
 
-            console.log('Slot date:', slot.date, 'Today:', today.toISOString().split('T')[0], 'dayOffset:', dayOffset);
+            // Calculer la différence en jours
+            const diffTime = slotDate.getTime() - today.getTime();
+            const dayOffset = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            console.log('Slot:', slot.start_time, '-', slot.end_time, 'Date:', slot.date, 'Today:', today.toISOString().split('T')[0], 'dayOffset:', dayOffset, 'diffTime:', diffTime);
 
             timeSlots.add(timeKey);
 
@@ -593,11 +597,15 @@
             // Add cells for each of the 7 days (0 = aujourd'hui, 1 = demain, etc.)
             for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
                 const dayCell = $('<td class="tsb-weekly-slot"></td>');
+                console.log('Checking dayIndex:', dayIndex, 'for timeKey:', timeKey, 'slotsByTimeAndDay[timeKey]:', slotsByTimeAndDay[timeKey]);
                 if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][dayIndex]) {
+                    console.log('Found slots for dayIndex:', dayIndex, 'count:', slotsByTimeAndDay[timeKey][dayIndex].length);
                     slotsByTimeAndDay[timeKey][dayIndex].forEach(slot => {
                         const slotElement = renderWeeklySlotItem(slot);
                         dayCell.append(slotElement);
                     });
+                } else {
+                    console.log('No slots found for dayIndex:', dayIndex);
                 }
                 row.append(dayCell);
             }
