@@ -489,11 +489,11 @@ class TimeSlotBooking {
                         <div class="tsb-form-row">
                             <div class="tsb-form-group">
                                 <label><?php _e('Prénom :', 'time-slot-booking'); ?></label>
-                                <input type="text" id="tsb-user-first-name" required>
+                                <input type="text" id="tsb-user-first-name">
                             </div>
                             <div class="tsb-form-group">
                                 <label><?php _e('Nom :', 'time-slot-booking'); ?></label>
-                                <input type="text" id="tsb-user-last-name" required>
+                                <input type="text" id="tsb-user-last-name">
                             </div>
                         </div>
                             <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('S\'inscrire', 'time-slot-booking'); ?></button>
@@ -593,6 +593,11 @@ class TimeSlotBooking {
         $slot_id = intval($_POST['slot_id']);
         $user_first_name = sanitize_text_field($_POST['user_first_name']);
         $user_last_name = sanitize_text_field($_POST['user_last_name']);
+
+        // Validate required fields
+        if (empty($user_first_name) || empty($user_last_name)) {
+            wp_send_json_error(__('Veuillez remplir tous les champs obligatoires.', 'time-slot-booking'));
+        }
 
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';

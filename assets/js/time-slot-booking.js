@@ -859,11 +859,23 @@
         event.preventDefault();
         
         const slotId = $('#tsb-register-slot-id').val();
-        const userFirstName = $('#tsb-user-first-name').val();
-        const userLastName = $('#tsb-user-last-name').val();
+        const userFirstName = $('#tsb-user-first-name').val().trim();
+        const userLastName = $('#tsb-user-last-name').val().trim();
         
-        if (!slotId || !userFirstName || !userLastName) {
-            showError('Veuillez remplir tous les champs obligatoires.');
+        if (!slotId) {
+            showError('Erreur technique. Veuillez rafraîchir la page.');
+            return;
+        }
+        
+        if (!userFirstName) {
+            showError('Veuillez saisir votre prénom.');
+            $('#tsb-user-first-name').focus();
+            return;
+        }
+        
+        if (!userLastName) {
+            showError('Veuillez saisir votre nom.');
+            $('#tsb-user-last-name').focus();
             return;
         }
         
