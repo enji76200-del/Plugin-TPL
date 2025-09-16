@@ -548,6 +548,8 @@
             slotDate.setHours(0,0,0,0);
             const dayOffset = Math.round((slotDate - today) / (1000 * 60 * 60 * 24));
 
+            console.log('Slot date:', slot.date, 'Today:', today.toISOString().split('T')[0], 'dayOffset:', dayOffset);
+
             timeSlots.add(timeKey);
 
             if (!slotsByTimeAndDay[timeKey]) {
@@ -588,11 +590,11 @@
             const row = $('<tr></tr>');
             row.append(`<td class="time-cell">${startTime}<br><small>${endTime}</small></td>`);
 
-            // Add cells for each of the 7 days
-            for (let day = 0; day < 7; day++) {
+            // Add cells for each of the 7 days (0 = aujourd'hui, 1 = demain, etc.)
+            for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
                 const dayCell = $('<td class="tsb-weekly-slot"></td>');
-                if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][day]) {
-                    slotsByTimeAndDay[timeKey][day].forEach(slot => {
+                if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][dayIndex]) {
+                    slotsByTimeAndDay[timeKey][dayIndex].forEach(slot => {
                         const slotElement = renderWeeklySlotItem(slot);
                         dayCell.append(slotElement);
                     });

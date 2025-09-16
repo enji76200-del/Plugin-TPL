@@ -23,7 +23,9 @@ class TimeSlotBooking {
 
     /**
      * Ajoute la page d'administration au menu WP
+     * COMMENTÉ : Interface admin supprimée car non nécessaire
      */
+    /*
     public function add_admin_menu() {
         add_menu_page(
             __('Plannings & Horaires', 'time-slot-booking'),
@@ -35,6 +37,7 @@ class TimeSlotBooking {
             26
         );
     }
+    */
 
     /**
      * Affiche la page d'administration pour configurer les horaires par défaut
@@ -138,7 +141,7 @@ class TimeSlotBooking {
     
     public function __construct() {
         add_action('init', array($this, 'init'));
-    add_action('admin_menu', array($this, 'add_admin_menu'));
+    // add_action('admin_menu', array($this, 'add_admin_menu')); // COMMENTÉ : Interface admin supprimée
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_scripts'));
         add_shortcode('time_slot_booking', array($this, 'render_booking_interface'));
@@ -412,17 +415,6 @@ class TimeSlotBooking {
                     <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
                 </div>
             </div>
-            
-            <?php if (current_user_can('manage_options')): ?>
-            <div class="tsb-admin-controls">
-                <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
-                    <?php _e('Ajouter un créneau', 'time-slot-booking'); ?>
-                </button>
-                <button id="tsb-block-mode-btn" class="tsb-btn tsb-btn-warning">
-                    <?php _e('Mode blocage', 'time-slot-booking'); ?>
-                </button>
-            </div>
-            <?php endif; ?>
             
             <!-- Daily View -->
             <div id="tsb-daily-view" class="tsb-daily-view">
