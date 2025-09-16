@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Table Plugin Demo</title>
+    <link rel="stylesheet" href="assets/css/registration-table.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <h1>Plugin WordPress - Tableau d'inscription Excel</h1>
+        <p>Démo du plugin de tableau d'inscription avec navigation par date et gestion des créneaux.</p>
+        
+        <!-- Demo version with static content for preview -->
+        <div id="registration-table-container">
+            <div class="date-navigation">
+                <button id="prev-date" class="nav-button">&lt;</button>
+                <span id="current-date"><?php echo date('l, d F Y'); ?></span>
+                <button id="next-date" class="nav-button">&gt;</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="registration-table" class="excel-style-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Horaires</th>
+                            <th>Créneaux</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <tr data-date="2024-09-16" class="available">
+                            <td class="date-cell">16/09/2024</td>
+                            <td class="time-cell">09:00</td>
+                            <td class="slot-cell clickable" data-slot-id="1">Disponible</td>
+                            <td class="action-cell">
+                                <button class="remove-slot" data-slot-id="1">×</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-16" class="registered">
+                            <td class="date-cell">16/09/2024</td>
+                            <td class="time-cell">10:00</td>
+                            <td class="slot-cell" data-slot-id="2">Jean Dupont</td>
+                            <td class="action-cell">
+                                <button class="remove-slot" data-slot-id="2">×</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-17">
+                            <td class="date-cell">17/09/2024</td>
+                            <td class="time-cell">-</td>
+                            <td class="slot-cell">-</td>
+                            <td class="action-cell">
+                                <button class="add-slot-here" data-date="2024-09-17">+</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-18" class="available">
+                            <td class="date-cell">18/09/2024</td>
+                            <td class="time-cell">14:00</td>
+                            <td class="slot-cell clickable" data-slot-id="3">Disponible</td>
+                            <td class="action-cell">
+                                <button class="remove-slot" data-slot-id="3">×</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-19">
+                            <td class="date-cell">19/09/2024</td>
+                            <td class="time-cell">-</td>
+                            <td class="slot-cell">-</td>
+                            <td class="action-cell">
+                                <button class="add-slot-here" data-date="2024-09-19">+</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-20" class="available">
+                            <td class="date-cell">20/09/2024</td>
+                            <td class="time-cell">11:30</td>
+                            <td class="slot-cell clickable" data-slot-id="4">Disponible</td>
+                            <td class="action-cell">
+                                <button class="remove-slot" data-slot-id="4">×</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-21">
+                            <td class="date-cell">21/09/2024</td>
+                            <td class="time-cell">-</td>
+                            <td class="slot-cell">-</td>
+                            <td class="action-cell">
+                                <button class="add-slot-here" data-date="2024-09-21">+</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-22" class="available">
+                            <td class="date-cell">22/09/2024</td>
+                            <td class="time-cell">15:00</td>
+                            <td class="slot-cell clickable" data-slot-id="5">Disponible</td>
+                            <td class="action-cell">
+                                <button class="remove-slot" data-slot-id="5">×</button>
+                            </td>
+                        </tr>
+                        <tr data-date="2024-09-23">
+                            <td class="date-cell">23/09/2024</td>
+                            <td class="time-cell">-</td>
+                            <td class="slot-cell">-</td>
+                            <td class="action-cell">
+                                <button class="add-slot-here" data-date="2024-09-23">+</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="controls">
+                <button id="add-slot-btn" class="control-button">Ajouter un créneau</button>
+                <div id="add-slot-form" style="display:none;">
+                    <input type="date" id="slot-date" />
+                    <input type="time" id="slot-time" />
+                    <input type="text" id="slot-description" placeholder="Description du créneau" />
+                    <button id="save-slot">Sauvegarder</button>
+                    <button id="cancel-slot">Annuler</button>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h2>Fonctionnalités du Plugin</h2>
+            <ul>
+                <li><strong>Navigation par date :</strong> Utilisez les flèches ou les touches fléchées du clavier pour naviguer entre les dates</li>
+                <li><strong>Période :</strong> Affiche 9 jours consécutifs (aujourd'hui + 8 jours)</li>
+                <li><strong>Colonnes :</strong> Date, Horaires, Créneaux, et Actions</li>
+                <li><strong>Ajout de créneaux :</strong> Cliquez sur "+" ou "Ajouter un créneau" pour créer de nouveaux créneaux</li>
+                <li><strong>Suppression :</strong> Cliquez sur "×" pour supprimer un créneau</li>
+                <li><strong>Inscription :</strong> Cliquez sur une case "Disponible" pour vous inscrire</li>
+                <li><strong>Style Excel :</strong> Design similaire à Microsoft Excel avec bordures et couleurs</li>
+            </ul>
+            
+            <h3>Utilisation dans WordPress</h3>
+            <p>Utilisez le shortcode <code>[registration_table]</code> pour afficher le tableau sur n'importe quelle page ou article.</p>
+        </div>
+    </div>
+
+    <script>
+        // Demo JavaScript for basic interactions (without AJAX)
+        jQuery(document).ready(function($) {
+            var currentDate = new Date();
+            
+            // Update current date display
+            updateDateDisplay();
+            
+            // Date navigation
+            $('#prev-date').on('click', function() {
+                currentDate.setDate(currentDate.getDate() - 1);
+                updateDateDisplay();
+            });
+            
+            $('#next-date').on('click', function() {
+                currentDate.setDate(currentDate.getDate() + 1);
+                updateDateDisplay();
+            });
+            
+            // Add slot form toggle
+            $('#add-slot-btn').on('click', function() {
+                $('#add-slot-form').toggle();
+                if ($('#add-slot-form').is(':visible')) {
+                    $('#slot-date').val(formatDate(currentDate));
+                }
+            });
+            
+            // Cancel add slot
+            $('#cancel-slot').on('click', function() {
+                $('#add-slot-form').hide();
+                clearForm();
+            });
+            
+            // Demo registration modal
+            $(document).on('click', '.slot-cell.clickable', function() {
+                showDemoModal();
+            });
+            
+            // Demo add slot
+            $('#save-slot').on('click', function() {
+                var date = $('#slot-date').val();
+                var time = $('#slot-time').val();
+                var description = $('#slot-description').val();
+                
+                if (!date || !time) {
+                    alert('Veuillez sélectionner une date et une heure');
+                    return;
+                }
+                
+                alert('Créneau ajouté avec succès ! (Démo)');
+                $('#add-slot-form').hide();
+                clearForm();
+            });
+            
+            function updateDateDisplay() {
+                $('#current-date').text(formatDateDisplay(currentDate));
+            }
+            
+            function formatDate(date) {
+                var year = date.getFullYear();
+                var month = String(date.getMonth() + 1).padStart(2, '0');
+                var day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            function formatDateDisplay(date) {
+                var options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                return date.toLocaleDateString('fr-FR', options);
+            }
+            
+            function clearForm() {
+                $('#slot-date').val('');
+                $('#slot-time').val('');
+                $('#slot-description').val('');
+            }
+            
+            function showDemoModal() {
+                var modal = $(`
+                    <div id="registration-modal" class="registration-modal">
+                        <div class="modal-content">
+                            <span class="close-modal">&times;</span>
+                            <h3>S'inscrire au créneau</h3>
+                            <input type="text" id="user-name" placeholder="Votre nom" required>
+                            <input type="email" id="user-email" placeholder="Votre email" required>
+                            <div class="modal-buttons">
+                                <button class="cancel-btn">Annuler</button>
+                                <button class="confirm-btn">S'inscrire</button>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                
+                $('body').append(modal);
+                $('#registration-modal').show();
+            }
+            
+            // Modal close events
+            $(document).on('click', '.close-modal, .cancel-btn', function() {
+                $('#registration-modal').remove();
+            });
+            
+            $(document).on('click', '.confirm-btn', function() {
+                var userName = $('#user-name').val().trim();
+                var userEmail = $('#user-email').val().trim();
+                
+                if (!userName || !userEmail) {
+                    alert('Veuillez remplir tous les champs');
+                    return;
+                }
+                
+                alert('Inscription réussie ! (Démo)');
+                $('#registration-modal').remove();
+            });
+            
+            // Close modal when clicking outside
+            $(document).on('click', '#registration-modal', function(e) {
+                if (e.target.id === 'registration-modal') {
+                    $('#registration-modal').remove();
+                }
+            });
+            
+            // Keyboard shortcuts
+            $(document).on('keydown', function(e) {
+                if (e.keyCode === 37 && !$(e.target).is('input, textarea')) {
+                    e.preventDefault();
+                    $('#prev-date').click();
+                }
+                if (e.keyCode === 39 && !$(e.target).is('input, textarea')) {
+                    e.preventDefault();
+                    $('#next-date').click();
+                }
+                if (e.keyCode === 27) {
+                    $('#registration-modal').remove();
+                    $('#add-slot-form').hide();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
