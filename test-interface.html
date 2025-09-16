@@ -31,7 +31,24 @@
         <h1>Plugin de Réservation de Créneaux Horaires - Test</h1>
         
         <!-- Plugin Interface -->
-        <div id="tsb-booking-container">
+        <div id="tsb-booking-container" data-current-planning="1">
+            
+            <!-- Planning Selection -->
+            <div class="tsb-planning-controls">
+                <div class="tsb-planning-navigation">
+                    <button id="tsb-prev-planning" class="tsb-nav-btn">&larr;</button>
+                    <div class="tsb-planning-selector">
+                        <select id="tsb-planning-select" class="tsb-planning-select">
+                            <option value="1">Gare-Станция</option>
+                            <option value="2">Centre ville Центр города</option>
+                            <option value="3">Citadelle Цитадель</option>
+                            <option value="4">Marché Nord Маркет Север</option>
+                        </select>
+                    </div>
+                    <button id="tsb-next-planning" class="tsb-nav-btn">&rarr;</button>
+                </div>
+            </div>
+            
             <div class="tsb-view-controls">
                 <div class="tsb-view-toggle">
                     <button class="tsb-view-btn active" data-view="daily">Vue journalière</button>
@@ -49,6 +66,9 @@
             <div class="tsb-admin-controls">
                 <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
                     Ajouter un Créneau
+                </button>
+                <button id="tsb-generate-weekly-btn" class="tsb-btn tsb-btn-success">
+                    Générer la semaine type
                 </button>
                 <button id="tsb-block-mode-btn" class="tsb-btn tsb-btn-warning">
                     Mode blocage
@@ -380,6 +400,28 @@
                 });
             });
             
+            // Planning navigation
+            document.getElementById('tsb-planning-select').addEventListener('change', function() {
+                const selectedPlanning = this.options[this.selectedIndex].text;
+                console.log('Planning sélectionné:', selectedPlanning);
+            });
+            
+            document.getElementById('tsb-prev-planning').addEventListener('click', function() {
+                const select = document.getElementById('tsb-planning-select');
+                const currentIndex = select.selectedIndex;
+                const newIndex = currentIndex > 0 ? currentIndex - 1 : select.options.length - 1;
+                select.selectedIndex = newIndex;
+                select.dispatchEvent(new Event('change'));
+            });
+            
+            document.getElementById('tsb-next-planning').addEventListener('click', function() {
+                const select = document.getElementById('tsb-planning-select');
+                const currentIndex = select.selectedIndex;
+                const newIndex = currentIndex < select.options.length - 1 ? currentIndex + 1 : 0;
+                select.selectedIndex = newIndex;
+                select.dispatchEvent(new Event('change'));
+            });
+            
             // Modal functionality
             function hideAllModals() {
                 document.querySelectorAll('.tsb-modal').forEach(modal => {
@@ -395,6 +437,14 @@
             // Add slot button
             document.getElementById('tsb-add-slot-btn').addEventListener('click', function() {
                 document.getElementById('tsb-add-slot-modal').style.display = 'block';
+            });
+            
+            // Generate weekly slots button
+            document.getElementById('tsb-generate-weekly-btn').addEventListener('click', function() {
+                const currentPlanning = document.getElementById('tsb-planning-select').options[document.getElementById('tsb-planning-select').selectedIndex].text;
+                if (confirm(`Générer les créneaux de la semaine type pour le planning "${currentPlanning}" ? (mode test)`)) {
+                    alert(`Créneaux générés pour ${currentPlanning} ! (mode test)`);
+                }
             });
             
             // Register buttons
