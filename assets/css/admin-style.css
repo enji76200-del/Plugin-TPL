@@ -1,0 +1,82 @@
+/* Style admin pour la configuration des plannings - tons pastel vert, bleu, gris */
+.tsb-admin-wrap {
+    background: #f6f8fa;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    max-width: 900px;
+    margin: 32px auto;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+.tsb-admin-wrap h1 {
+    color: #2c3e50;
+    margin-bottom: 24px;
+}
+.tsb-planning-section {
+    background: #eafaf1;
+    border: 1px solid #b2dfdb;
+    border-radius: 8px;
+    margin-bottom: 32px;
+    padding: 18px 24px;
+    box-shadow: 0 1px 4px rgba(44,62,80,0.04);
+}
+.tsb-planning-section h2 {
+    color: #1976d2;
+    margin-top: 0;
+}
+.tsb-label {
+    font-weight: 500;
+    color: #388e3c;
+    margin-right: 8px;
+}
+.tsb-select, .tsb-input, .tsb-textarea {
+    border-radius: 4px;
+    border: 1px solid #b2dfdb;
+    padding: 6px 10px;
+    font-size: 15px;
+    background: #f0f4f8;
+    margin-bottom: 8px;
+}
+.tsb-textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+}
+.tsb-date-group {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+.tsb-date-group label {
+    color: #1976d2;
+    font-weight: 500;
+}
+.tsb-help {
+    font-size: 13px;
+    color: #607d8b;
+    margin-bottom: 8px;
+}
+.tsb-summary {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+    padding: 8px 16px;
+    margin-top: 12px;
+    border-radius: 4px;
+    color: #2c3e50;
+}
+.tsb-error {
+    background: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #c62828;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+}
+.tsb-success {
+    background: #eafaf1;
+    color: #388e3c;
+    border-left: 4px solid #388e3c;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    border-radius: 4px;
+}

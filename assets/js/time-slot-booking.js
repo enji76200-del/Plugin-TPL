@@ -524,7 +524,7 @@
         if (!slots || slots.length === 0) {
             tbody.append(`
                 <tr>
-                    <td colspan="8" class="tsb-empty-state">
+                    <td colspan="9" class="tsb-empty-state">
                         <h4>Aucun créneau disponible</h4>
                         <p>Aucun créneau horaire n'a été défini pour cette semaine.</p>
                     </td>
@@ -532,55 +532,70 @@
             `);
             return;
         }
-        
+
         // Group slots by time and day
         const slotsByTimeAndDay = {};
         const timeSlots = new Set();
-        
+
         slots.forEach(slot => {
             const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
-            const dayIndex = new Date(slot.date).getDay();
-            const adjustedDayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert to Monday = 0
-            
+            // Calculer l'index du jour par rapport au lundi
+            const slotDate = new Date(slot.date);
+            const weekStart = new Date(currentWeekStart);
+            weekStart.setHours(0,0,0,0);
+            slotDate.setHours(0,0,0,0);
+            const dayOffset = Math.round((slotDate - weekStart) / (1000 * 60 * 60 * 24));
+
             timeSlots.add(timeKey);
-            
+
             if (!slotsByTimeAndDay[timeKey]) {
                 slotsByTimeAndDay[timeKey] = {};
             }
-            
-            if (!slotsByTimeAndDay[timeKey][adjustedDayIndex]) {
-                slotsByTimeAndDay[timeKey][adjustedDayIndex] = [];
+
+            if (!slotsByTimeAndDay[timeKey][dayOffset]) {
+                slotsByTimeAndDay[timeKey][dayOffset] = [];
             }
-            
-            slotsByTimeAndDay[timeKey][adjustedDayIndex].push(slot);
+
+            slotsByTimeAndDay[timeKey][dayOffset].push(slot);
         });
-        
+
         // Sort time slots
         const sortedTimeSlots = Array.from(timeSlots).sort();
-        
+
+        // Générer les dates des 8 jours (lundi à lundi suivant)
+        const days = [];
+        for (let i = 0; i < 8; i++) {
+            const d = new Date(currentWeekStart);
+            d.setDate(d.getDate() + i);
+            days.push(d);
+        }
+
+        // Mettre à jour l'en-tête du tableau
+        const thead = $('#tsb-weekly-view table thead tr');
+        thead.empty();
+        thead.append('<th class="time-header">Horaires</th>');
+        days.forEach((date, idx) => {
+            const options = { weekday: 'long', day: 'numeric', month: 'short' };
+            thead.append(`<th>${date.toLocaleDateString('fr-FR', options)}</th>`);
+        });
+
         // Render each time slot row
         sortedTimeSlots.forEach(timeKey => {
             const [startTime, endTime] = timeKey.split('-');
-            const row = $(`
-                <tr>
-                    <td class="time-cell">${startTime}<br><small>${endTime}</small></td>
-                </tr>
-            `);
-            
-            // Add cells for each day of the week
-            for (let day = 0; day < 7; day++) {
+            const row = $('<tr></tr>');
+            row.append(`<td class="time-cell">${startTime}<br><small>${endTime}</small></td>`);
+
+            // Add cells for each of the 8 days
+            for (let day = 0; day < 8; day++) {
                 const dayCell = $('<td class="tsb-weekly-slot"></td>');
-                
                 if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][day]) {
                     slotsByTimeAndDay[timeKey][day].forEach(slot => {
                         const slotElement = renderWeeklySlotItem(slot);
                         dayCell.append(slotElement);
                     });
                 }
-                
                 row.append(dayCell);
             }
-            
             tbody.append(row);
         });
     }
