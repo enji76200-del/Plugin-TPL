@@ -65,12 +65,14 @@ class TimeSlotBooking {
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('tsb_nonce'),
             'current_planning' => 1, // Will be updated by JS
+            'is_admin' => current_user_can('manage_options') ? 1 : 0,
             'messages' => array(
-                'success' => __('Operation completed successfully', 'time-slot-booking'),
-                'error' => __('An error occurred', 'time-slot-booking'),
-                'confirm_remove' => __('Are you sure you want to remove this time slot?', 'time-slot-booking'),
+                'success' => __('Opération terminée avec succès', 'time-slot-booking'),
+                'error' => __('Une erreur est survenue', 'time-slot-booking'),
+                'confirm_remove' => __('Êtes-vous sûr de vouloir supprimer ce créneau ?', 'time-slot-booking'),
                 'generate_weekly_success' => __('Créneaux de la semaine type générés avec succès', 'time-slot-booking'),
-                'generate_weekly_error' => __('Erreur lors de la génération des créneaux', 'time-slot-booking')
+                'generate_weekly_error' => __('Erreur lors de la génération des créneaux', 'time-slot-booking'),
+                'planning_change_success' => __('Planning changé avec succès', 'time-slot-booking')
             )
         ));
     }
@@ -117,7 +119,7 @@ class TimeSlotBooking {
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY unique_slot (planning_id, date, start_time, end_time),
-            FOREIGN KEY (planning_id) REFERENCES $table_plannings(id) ON DELETE CASCADE
+            KEY idx_planning_date (planning_id, date)
         ) $charset_collate;";
         
         // User registrations table - enhanced with first/last name separation
@@ -132,7 +134,8 @@ class TimeSlotBooking {
             registered_at datetime DEFAULT CURRENT_TIMESTAMP,
             expires_at datetime DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 14 DAY)),
             PRIMARY KEY (id),
-            FOREIGN KEY (slot_id) REFERENCES $table_slots(id) ON DELETE CASCADE
+            KEY idx_slot_id (slot_id),
+            KEY idx_user_email (user_email)
         ) $charset_collate;";
         
         // Unregistration audit table
@@ -148,7 +151,7 @@ class TimeSlotBooking {
             unregistered_at datetime DEFAULT CURRENT_TIMESTAMP,
             reason varchar(255),
             PRIMARY KEY (id),
-            FOREIGN KEY (slot_id) REFERENCES $table_slots(id) ON DELETE CASCADE
+            KEY idx_slot_id (slot_id)
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -282,7 +285,7 @@ class TimeSlotBooking {
             <?php if ($atts['show_admin'] || current_user_can('manage_options')): ?>
             <div class="tsb-admin-controls">
                 <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
-                    <?php _e('Add Time Slot', 'time-slot-booking'); ?>
+                    <?php _e('Ajouter un créneau', 'time-slot-booking'); ?>
                 </button>
                 <button id="tsb-generate-weekly-btn" class="tsb-btn tsb-btn-success">
                     <?php _e('Générer la semaine type', 'time-slot-booking'); ?>
@@ -343,21 +346,21 @@ class TimeSlotBooking {
             <div id="tsb-add-slot-modal" class="tsb-modal" style="display: none;">
                 <div class="tsb-modal-content">
                     <span class="tsb-close">&times;</span>
-                    <h3><?php _e('Add Time Slot', 'time-slot-booking'); ?></h3>
+                    <h3><?php _e('Ajouter un créneau', 'time-slot-booking'); ?></h3>
                     <form id="tsb-add-slot-form">
                         <div class="tsb-form-group">
-                            <label><?php _e('Start Time:', 'time-slot-booking'); ?></label>
+                            <label><?php _e('Heure de début :', 'time-slot-booking'); ?></label>
                             <input type="time" id="tsb-start-time" required>
                         </div>
                         <div class="tsb-form-group">
-                            <label><?php _e('End Time:', 'time-slot-booking'); ?></label>
+                            <label><?php _e('Heure de fin :', 'time-slot-booking'); ?></label>
                             <input type="time" id="tsb-end-time" required>
                         </div>
                         <div class="tsb-form-group">
-                            <label><?php _e('Capacity:', 'time-slot-booking'); ?></label>
+                            <label><?php _e('Capacité :', 'time-slot-booking'); ?></label>
                             <input type="number" id="tsb-capacity" min="1" value="1" required>
                         </div>
-                        <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('Add Slot', 'time-slot-booking'); ?></button>
+                        <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('Ajouter le créneau', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
             </div>
@@ -366,28 +369,28 @@ class TimeSlotBooking {
             <div id="tsb-register-modal" class="tsb-modal" style="display: none;">
                 <div class="tsb-modal-content">
                     <span class="tsb-close">&times;</span>
-                    <h3><?php _e('Register for Time Slot', 'time-slot-booking'); ?></h3>
+                    <h3><?php _e('S\'inscrire au créneau', 'time-slot-booking'); ?></h3>
                     <form id="tsb-register-form">
                         <input type="hidden" id="tsb-register-slot-id">
                         <div class="tsb-form-row">
                             <div class="tsb-form-group">
-                                <label><?php _e('First Name:', 'time-slot-booking'); ?></label>
+                                <label><?php _e('Prénom :', 'time-slot-booking'); ?></label>
                                 <input type="text" id="tsb-user-first-name" required>
                             </div>
                             <div class="tsb-form-group">
-                                <label><?php _e('Last Name:', 'time-slot-booking'); ?></label>
+                                <label><?php _e('Nom :', 'time-slot-booking'); ?></label>
                                 <input type="text" id="tsb-user-last-name" required>
                             </div>
                         </div>
                         <div class="tsb-form-group">
-                            <label><?php _e('Email:', 'time-slot-booking'); ?></label>
+                            <label><?php _e('Email :', 'time-slot-booking'); ?></label>
                             <input type="email" id="tsb-user-email" required>
                         </div>
                         <div class="tsb-form-group">
-                            <label><?php _e('Phone:', 'time-slot-booking'); ?></label>
+                            <label><?php _e('Téléphone :', 'time-slot-booking'); ?></label>
                             <input type="tel" id="tsb-user-phone">
                         </div>
-                        <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('Register', 'time-slot-booking'); ?></button>
+                        <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('S\'inscrire', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
             </div>
@@ -445,7 +448,7 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_die(__('Unauthorized', 'time-slot-booking'));
+            wp_die(__('Non autorisé', 'time-slot-booking'));
         }
         
         $date = sanitize_text_field($_POST['date']);
@@ -470,9 +473,9 @@ class TimeSlotBooking {
         );
         
         if ($result !== false) {
-            wp_send_json_success(__('Time slot added successfully', 'time-slot-booking'));
+            wp_send_json_success(__('Créneau ajouté avec succès', 'time-slot-booking'));
         } else {
-            wp_send_json_error(__('Failed to add time slot', 'time-slot-booking'));
+            wp_send_json_error(__('Échec de l\'ajout du créneau', 'time-slot-booking'));
         }
     }
     
@@ -480,7 +483,7 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_die(__('Unauthorized', 'time-slot-booking'));
+            wp_die(__('Non autorisé', 'time-slot-booking'));
         }
         
         $slot_id = intval($_POST['slot_id']);
@@ -491,9 +494,9 @@ class TimeSlotBooking {
         $result = $wpdb->delete($table_name, array('id' => $slot_id), array('%d'));
         
         if ($result !== false) {
-            wp_send_json_success(__('Time slot removed successfully', 'time-slot-booking'));
+            wp_send_json_success(__('Créneau supprimé avec succès', 'time-slot-booking'));
         } else {
-            wp_send_json_error(__('Failed to remove time slot', 'time-slot-booking'));
+            wp_send_json_error(__('Échec de la suppression du créneau', 'time-slot-booking'));
         }
     }
     
@@ -513,11 +516,11 @@ class TimeSlotBooking {
         // Check if slot exists and is not blocked
         $slot = $wpdb->get_row($wpdb->prepare("SELECT * FROM $slots_table WHERE id = %d", $slot_id));
         if (!$slot) {
-            wp_send_json_error(__('Time slot not found', 'time-slot-booking'));
+            wp_send_json_error(__('Créneau non trouvé', 'time-slot-booking'));
         }
         
         if ($slot->is_blocked) {
-            wp_send_json_error(__('This time slot is blocked', 'time-slot-booking'));
+            wp_send_json_error(__('Ce créneau est bloqué', 'time-slot-booking'));
         }
         
         // Check capacity
@@ -527,7 +530,7 @@ class TimeSlotBooking {
         ", $slot_id));
         
         if ($current_registrations >= $slot->capacity) {
-            wp_send_json_error(__('This time slot is full', 'time-slot-booking'));
+            wp_send_json_error(__('Ce créneau est complet', 'time-slot-booking'));
         }
         
         // Check if user is already registered for this slot
@@ -537,7 +540,7 @@ class TimeSlotBooking {
         ", $slot_id, $user_email));
         
         if ($existing_registration > 0) {
-            wp_send_json_error(__('You are already registered for this time slot', 'time-slot-booking'));
+            wp_send_json_error(__('Vous êtes déjà inscrit à ce créneau', 'time-slot-booking'));
         }
         
         $result = $wpdb->insert(
@@ -553,9 +556,9 @@ class TimeSlotBooking {
         );
         
         if ($result !== false) {
-            wp_send_json_success(__('Registration successful', 'time-slot-booking'));
+            wp_send_json_success(__('Inscription réussie', 'time-slot-booking'));
         } else {
-            wp_send_json_error(__('Registration failed', 'time-slot-booking'));
+            wp_send_json_error(__('Échec de l\'inscription', 'time-slot-booking'));
         }
     }
     
@@ -598,7 +601,7 @@ class TimeSlotBooking {
         ", $slot_id, $user_email));
         
         if (!$registration) {
-            wp_send_json_error(__('Registration not found', 'time-slot-booking'));
+            wp_send_json_error(__('Inscription non trouvée', 'time-slot-booking'));
         }
         
         // Create audit record
@@ -624,9 +627,9 @@ class TimeSlotBooking {
         );
         
         if ($result !== false) {
-            wp_send_json_success(__('Unregistration successful', 'time-slot-booking'));
+            wp_send_json_success(__('Désinscription réussie', 'time-slot-booking'));
         } else {
-            wp_send_json_error(__('Unregistration failed', 'time-slot-booking'));
+            wp_send_json_error(__('Échec de la désinscription', 'time-slot-booking'));
         }
     }
     
@@ -634,7 +637,7 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_die(__('Unauthorized', 'time-slot-booking'));
+            wp_die(__('Non autorisé', 'time-slot-booking'));
         }
         
         $slot_id = intval($_POST['slot_id']);
@@ -656,10 +659,10 @@ class TimeSlotBooking {
         );
         
         if ($result !== false) {
-            $message = $is_blocked ? __('Time slot blocked successfully', 'time-slot-booking') : __('Time slot unblocked successfully', 'time-slot-booking');
+            $message = $is_blocked ? __('Créneau bloqué avec succès', 'time-slot-booking') : __('Créneau débloqué avec succès', 'time-slot-booking');
             wp_send_json_success($message);
         } else {
-            wp_send_json_error(__('Failed to update time slot', 'time-slot-booking'));
+            wp_send_json_error(__('Échec de la mise à jour du créneau', 'time-slot-booking'));
         }
     }
     
@@ -814,8 +817,9 @@ class TimeSlotBooking {
             $weekly_template = $this->get_default_weekly_template();
         }
         
-        // Generate slots for next 7 days starting from tomorrow
-        $start_date = new DateTime('tomorrow');
+        // Generate slots for next 7 days starting from today
+        $start_date = new DateTime();
+        $generated_count = 0;
         
         for ($i = 0; $i < 7; $i++) {
             $current_date = clone $start_date;
@@ -835,8 +839,10 @@ class TimeSlotBooking {
             
             $day_name = $day_names[$current_date->format('l')];
             
-            if (isset($weekly_template[$day_name])) {
+            if (isset($weekly_template[$day_name]) && is_array($weekly_template[$day_name])) {
                 foreach ($weekly_template[$day_name] as $slot_data) {
+                    if (!is_array($slot_data) || count($slot_data) < 3) continue;
+                    
                     list($start_time, $end_time, $capacity) = $slot_data;
                     
                     // Check if slot already exists
@@ -846,7 +852,7 @@ class TimeSlotBooking {
                     ", $planning_id, $date_string, $start_time, $end_time));
                     
                     if (!$existing_slot) {
-                        $wpdb->insert(
+                        $result = $wpdb->insert(
                             $slots_table,
                             array(
                                 'planning_id' => $planning_id,
@@ -860,10 +866,16 @@ class TimeSlotBooking {
                             ),
                             array('%d', '%s', '%s', '%s', '%d', '%d', '%d', '%s')
                         );
+                        
+                        if ($result !== false) {
+                            $generated_count++;
+                        }
                     }
                 }
             }
         }
+        
+        return $generated_count;
     }
     
     /**
@@ -954,16 +966,20 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         if (!current_user_can('manage_options')) {
-            wp_die(__('Unauthorized', 'time-slot-booking'));
+            wp_die(__('Non autorisé', 'time-slot-booking'));
         }
         
         $planning_id = intval($_POST['planning_id'] ?? 1);
         
         try {
-            $this->generate_weekly_slots_for_planning($planning_id);
-            wp_send_json_success(__('Créneaux de la semaine type générés avec succès', 'time-slot-booking'));
+            $generated_count = $this->generate_weekly_slots_for_planning($planning_id);
+            if ($generated_count > 0) {
+                wp_send_json_success(sprintf(__('%d créneaux de la semaine type générés avec succès', 'time-slot-booking'), $generated_count));
+            } else {
+                wp_send_json_success(__('Aucun nouveau créneau à générer (créneaux déjà existants)', 'time-slot-booking'));
+            }
         } catch (Exception $e) {
-            wp_send_json_error(__('Erreur lors de la génération des créneaux', 'time-slot-booking'));
+            wp_send_json_error(__('Erreur lors de la génération des créneaux: ', 'time-slot-booking') . $e->getMessage());
         }
     }
     

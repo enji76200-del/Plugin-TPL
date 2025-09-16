@@ -24,8 +24,14 @@
         loadPlannings();
         loadCurrentView();
         
-        // Check if user has admin privileges
-        isAdmin = $('[id*="tsb-add-slot"]').length > 0;
+        // Check if user has admin privileges from localized data
+        isAdmin = tsb_ajax.is_admin == 1;
+        
+        // Hide admin controls if not admin
+        if (!isAdmin) {
+            $('.tsb-admin-controls').hide();
+            $('.tsb-remove-btn, .tsb-block-btn, .tsb-unblock-btn').hide();
+        }
         
         // Get current planning from container
         const container = $('#tsb-booking-container');
@@ -359,7 +365,7 @@
                     <td colspan="2" class="tsb-empty-state">
                         <h4>Aucun créneau disponible</h4>
                         <p>Aucun créneau horaire n'a été défini pour cette date.</p>
-                        ${isAdmin ? '<p>Utilisez le bouton "Ajouter un créneau" pour créer des créneaux.</p>' : ''}
+                        ${isAdmin ? '<p>Utilisez le bouton "Ajouter un créneau" ou "Générer la semaine type" pour créer des créneaux.</p>' : ''}
                     </td>
                 </tr>
             `);
@@ -761,6 +767,11 @@
             return;
         }
         
+        // Show loading state
+        const btn = $('#tsb-generate-weekly-btn');
+        const originalText = btn.text();
+        btn.prop('disabled', true).text('Génération...');
+        
         $.ajax({
             url: tsb_ajax.ajax_url,
             type: 'POST',
@@ -779,6 +790,9 @@
             },
             error: function() {
                 showError(tsb_ajax.messages.generate_weekly_error);
+            },
+            complete: function() {
+                btn.prop('disabled', false).text(originalText);
             }
         });
     }
