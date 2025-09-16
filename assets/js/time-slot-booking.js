@@ -8,32 +8,98 @@
 
     // Global variables
     let currentDate = new Date();
+    let currentView = 'daily'; // 'daily' or 'weekly'
+    let currentWeekStart = new Date();
     let isAdmin = false;
+    let blockingMode = false;
 
     // Initialize the plugin
     $(document).ready(function() {
         initializeDateNavigation();
+        initializeViewControls();
         bindEvents();
-        loadCurrentDateSlots();
+        loadCurrentView();
         
         // Check if user has admin privileges
         isAdmin = $('[id*="tsb-add-slot"]').length > 0;
+        
+        // Set initial week start
+        setWeekStart(currentDate);
     });
 
     /**
-     * Initialize date navigation
+     * Initialize view controls
      */
+    function initializeViewControls() {
+        $('.tsb-view-btn').on('click', function() {
+            const view = $(this).data('view');
+            switchView(view);
+        });
+    }
+    
+    /**
+     * Switch between daily and weekly views
+     */
+    function switchView(view) {
+        currentView = view;
+        
+        // Update active button
+        $('.tsb-view-btn').removeClass('active');
+        $(`.tsb-view-btn[data-view="${view}"]`).addClass('active');
+        
+        // Show/hide appropriate views
+        if (view === 'weekly') {
+            $('#tsb-daily-view').hide();
+            $('#tsb-weekly-view').show();
+            loadWeeklyView();
+        } else {
+            $('#tsb-weekly-view').hide();
+            $('#tsb-daily-view').show();
+            loadCurrentDateSlots();
+        }
+        
+        updateDateDisplay();
+    }
+    
+    /**
+     * Set week start date (Monday)
+     */
+    function setWeekStart(date) {
+        currentWeekStart = new Date(date);
+        const day = currentWeekStart.getDay();
+        const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+        currentWeekStart.setDate(diff);
+    }
+    
+    /**
+     * Load current view based on selected view type
+     */
+    function loadCurrentView() {
+        if (currentView === 'weekly') {
+            loadWeeklyView();
+        } else {
+            loadCurrentDateSlots();
+        }
+    }
     function initializeDateNavigation() {
         // Set current date
         updateDateDisplay();
         
         // Bind navigation events
         $('#tsb-prev-date').on('click', function() {
-            navigateDate(-1);
+            if (currentView === 'weekly') {
+                navigateWeek(-1);
+            } else {
+                navigateDate(-1);
+            }
         });
         
         $('#tsb-next-date').on('click', function() {
-            navigateDate(1);
+            if (currentView === 'weekly') {
+                navigateWeek(1);
+            } else {
+                navigateDate(1);
+            }
         });
         
         // Disable previous date if it's today or earlier
@@ -49,18 +115,46 @@
         updateNavigationButtons();
         loadCurrentDateSlots();
     }
+    
+    /**
+     * Navigate to previous/next week
+     */
+    function navigateWeek(direction) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+        currentDate = new Date(currentWeekStart);
+        updateDateDisplay();
+        updateNavigationButtons();
+        loadWeeklyView();
+    }
 
     /**
      * Update date display
      */
     function updateDateDisplay() {
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        $('#tsb-current-date').text(currentDate.toLocaleDateString('fr-FR', options));
+        if (currentView === 'weekly') {
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            const startStr = currentWeekStart.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short' 
+            });
+            const endStr = endDate.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
+            $('#tsb-current-date').text(`Semaine du ${startStr} au ${endStr}`);
+        } else {
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            $('#tsb-current-date').text(currentDate.toLocaleDateString('fr-FR', options));
+        }
     }
 
     /**
@@ -94,6 +188,19 @@
         // User registration
         $(document).on('click', '.tsb-register-btn', showRegisterModal);
         $(document).on('submit', '#tsb-register-form', handleUserRegistration);
+        
+        // User unregistration
+        $(document).on('click', '.tsb-unregister-btn', showUnregisterModal);
+        $(document).on('submit', '#tsb-unregister-form', handleUserUnregistration);
+        
+        // Block slot functionality
+        $(document).on('click', '.tsb-block-btn', showBlockSlotModal);
+        $(document).on('click', '.tsb-unblock-btn', showBlockSlotModal);
+        $(document).on('submit', '#tsb-block-slot-form', handleBlockSlot);
+        $(document).on('change', '#tsb-block-checkbox', toggleBlockReasonField);
+        
+        // Block mode toggle
+        $(document).on('click', '#tsb-block-mode-btn', toggleBlockingMode);
         
         // Remove time slot
         $(document).on('click', '.tsb-remove-btn', handleRemoveSlot);
@@ -212,26 +319,203 @@
     function renderSlotItem(slot, containerId) {
         const container = $(`#slots-${containerId}`);
         const isAvailable = parseInt(slot.registered_count) < parseInt(slot.capacity);
-        const slotClass = isAvailable ? 'tsb-slot-available' : 'tsb-slot-full';
+        const isBlocked = parseInt(slot.is_blocked || 0) === 1;
+        
+        let slotClass = 'tsb-slot-item ';
+        if (isBlocked) {
+            slotClass += 'tsb-slot-blocked';
+        } else if (isAvailable) {
+            slotClass += 'tsb-slot-available';
+        } else {
+            slotClass += 'tsb-slot-full';
+        }
+        
+        let status = '';
+        if (isBlocked) {
+            status = `Bloqué${slot.block_reason ? ` (${slot.block_reason})` : ''}`;
+        } else if (isAvailable) {
+            status = 'Disponible';
+        } else {
+            status = 'Complet';
+        }
+        
+        let actions = '';
+        if (!isBlocked && isAvailable) {
+            actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="${slot.id}">S'inscrire</button>`;
+        }
+        if (!isBlocked && parseInt(slot.registered_count) > 0) {
+            actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-unregister-btn" data-slot-id="${slot.id}">Me désinscrire</button>`;
+        }
+        if (isAdmin) {
+            if (isBlocked) {
+                actions += `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-unblock-btn" data-slot-id="${slot.id}">Débloquer</button>`;
+            } else {
+                actions += `<button class="tsb-btn tsb-btn-warning tsb-btn-small tsb-block-btn" data-slot-id="${slot.id}">Bloquer</button>`;
+            }
+            actions += `<button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="${slot.id}">Supprimer</button>`;
+        }
         
         const slotElement = $(`
-            <div class="tsb-slot-item ${slotClass}" data-slot-id="${slot.id}">
+            <div class="${slotClass}" data-slot-id="${slot.id}">
                 <div class="tsb-slot-info">
-                    <div class="tsb-slot-status">
-                        ${isAvailable ? 'Disponible' : 'Complet'}
-                    </div>
+                    <div class="tsb-slot-status">${status}</div>
                     <div class="tsb-slot-capacity">
                         ${slot.registered_count}/${slot.capacity} inscrit(s)
                     </div>
                 </div>
                 <div class="tsb-slot-actions">
-                    ${isAvailable ? `<button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="${slot.id}">S'inscrire</button>` : ''}
-                    ${isAdmin ? `<button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="${slot.id}">Supprimer</button>` : ''}
+                    ${actions}
                 </div>
             </div>
         `);
         
         container.append(slotElement);
+    }
+
+    /**
+     * Load weekly view
+     */
+    function loadWeeklyView() {
+        showLoading('#tsb-weekly-table-body');
+        
+        const startDateString = formatDateForServer(currentWeekStart);
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_week_slots',
+                start_date: startDateString,
+                planning_id: 1, // Default planning
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    renderWeeklySlots(response.data);
+                } else {
+                    showError(response.data || tsb_ajax.messages.error);
+                }
+            },
+            error: function() {
+                showError(tsb_ajax.messages.error);
+            },
+            complete: function() {
+                hideLoading();
+            }
+        });
+    }
+
+    /**
+     * Render weekly slots
+     */
+    function renderWeeklySlots(slots) {
+        const tbody = $('#tsb-weekly-table-body');
+        tbody.empty();
+        
+        if (!slots || slots.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="8" class="tsb-empty-state">
+                        <h4>Aucun créneau disponible</h4>
+                        <p>Aucun créneau horaire n'a été défini pour cette semaine.</p>
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        // Group slots by time and day
+        const slotsByTimeAndDay = {};
+        const timeSlots = new Set();
+        
+        slots.forEach(slot => {
+            const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
+            const dayIndex = new Date(slot.date).getDay();
+            const adjustedDayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert to Monday = 0
+            
+            timeSlots.add(timeKey);
+            
+            if (!slotsByTimeAndDay[timeKey]) {
+                slotsByTimeAndDay[timeKey] = {};
+            }
+            
+            if (!slotsByTimeAndDay[timeKey][adjustedDayIndex]) {
+                slotsByTimeAndDay[timeKey][adjustedDayIndex] = [];
+            }
+            
+            slotsByTimeAndDay[timeKey][adjustedDayIndex].push(slot);
+        });
+        
+        // Sort time slots
+        const sortedTimeSlots = Array.from(timeSlots).sort();
+        
+        // Render each time slot row
+        sortedTimeSlots.forEach(timeKey => {
+            const [startTime, endTime] = timeKey.split('-');
+            const row = $(`
+                <tr>
+                    <td class="time-cell">${startTime}<br><small>${endTime}</small></td>
+                </tr>
+            `);
+            
+            // Add cells for each day of the week
+            for (let day = 0; day < 7; day++) {
+                const dayCell = $('<td class="tsb-weekly-slot"></td>');
+                
+                if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][day]) {
+                    slotsByTimeAndDay[timeKey][day].forEach(slot => {
+                        const slotElement = renderWeeklySlotItem(slot);
+                        dayCell.append(slotElement);
+                    });
+                }
+                
+                row.append(dayCell);
+            }
+            
+            tbody.append(row);
+        });
+    }
+
+    /**
+     * Render individual weekly slot item
+     */
+    function renderWeeklySlotItem(slot) {
+        const isAvailable = parseInt(slot.registered_count) < parseInt(slot.capacity);
+        const isBlocked = parseInt(slot.is_blocked) === 1;
+        
+        let slotClass = 'tsb-slot-item-mini ';
+        if (isBlocked) {
+            slotClass += 'tsb-slot-blocked-mini';
+        } else if (isAvailable) {
+            slotClass += 'tsb-slot-available-mini';
+        } else {
+            slotClass += 'tsb-slot-full-mini';
+        }
+        
+        let status = '';
+        if (isBlocked) {
+            status = 'Bloqué';
+        } else if (isAvailable) {
+            status = 'Libre';
+        } else {
+            status = 'Complet';
+        }
+        
+        const slotElement = $(`
+            <div class="${slotClass}" data-slot-id="${slot.id}" title="${status}">
+                <div class="tsb-slot-status-mini">${status}</div>
+                <div class="tsb-slot-capacity-mini">${slot.registered_count}/${slot.capacity}</div>
+            </div>
+        `);
+        
+        // Add click handlers
+        if (!isBlocked && isAvailable) {
+            slotElement.on('click', function() {
+                showRegisterModal({ target: this });
+            });
+        }
+        
+        return slotElement;
     }
 
     /**
@@ -249,7 +533,68 @@
         const slotId = $(event.target).data('slot-id');
         $('#tsb-register-slot-id').val(slotId);
         $('#tsb-register-modal').show();
-        $('#tsb-user-name').focus();
+        $('#tsb-user-first-name').focus();
+    }
+
+    /**
+     * Show user unregistration modal
+     */
+    function showUnregisterModal(event) {
+        const slotId = $(event.target).data('slot-id');
+        $('#tsb-unregister-slot-id').val(slotId);
+        $('#tsb-unregister-modal').show();
+        $('#tsb-unregister-email').focus();
+    }
+
+    /**
+     * Show block slot modal
+     */
+    function showBlockSlotModal(event) {
+        const slotId = $(event.target).data('slot-id');
+        const isCurrentlyBlocked = $(event.target).hasClass('tsb-unblock-btn');
+        
+        $('#tsb-block-slot-id').val(slotId);
+        $('#tsb-block-checkbox').prop('checked', !isCurrentlyBlocked);
+        $('#tsb-block-action').val(isCurrentlyBlocked ? 'unblock' : 'block');
+        
+        if (isCurrentlyBlocked) {
+            $('#tsb-block-reason-group').hide();
+        } else {
+            $('#tsb-block-reason-group').show();
+        }
+        
+        $('#tsb-block-slot-modal').show();
+        if (!isCurrentlyBlocked) {
+            $('#tsb-block-reason').focus();
+        }
+    }
+
+    /**
+     * Toggle block reason field
+     */
+    function toggleBlockReasonField() {
+        const isBlocked = $('#tsb-block-checkbox').is(':checked');
+        if (isBlocked) {
+            $('#tsb-block-reason-group').show();
+        } else {
+            $('#tsb-block-reason-group').hide();
+        }
+    }
+
+    /**
+     * Toggle blocking mode
+     */
+    function toggleBlockingMode() {
+        blockingMode = !blockingMode;
+        const btn = $('#tsb-block-mode-btn');
+        
+        if (blockingMode) {
+            btn.removeClass('tsb-btn-warning').addClass('tsb-btn-danger').text('Mode normal');
+            showSuccess('Mode blocage activé. Cliquez sur les créneaux pour les bloquer/débloquer.');
+        } else {
+            btn.removeClass('tsb-btn-danger').addClass('tsb-btn-warning').text('Mode blocage');
+            showSuccess('Mode blocage désactivé.');
+        }
     }
 
     /**
@@ -260,6 +605,9 @@
         // Reset forms
         $('#tsb-add-slot-form')[0].reset();
         $('#tsb-register-form')[0].reset();
+        $('#tsb-unregister-form')[0].reset();
+        $('#tsb-block-slot-form')[0].reset();
+        $('#tsb-block-reason-group').show(); // Reset to default state
     }
 
     /**
@@ -317,11 +665,12 @@
         event.preventDefault();
         
         const slotId = $('#tsb-register-slot-id').val();
-        const userName = $('#tsb-user-name').val();
+        const userFirstName = $('#tsb-user-first-name').val();
+        const userLastName = $('#tsb-user-last-name').val();
         const userEmail = $('#tsb-user-email').val();
         const userPhone = $('#tsb-user-phone').val();
         
-        if (!slotId || !userName || !userEmail) {
+        if (!slotId || !userFirstName || !userLastName || !userEmail) {
             showError('Veuillez remplir tous les champs obligatoires.');
             return;
         }
@@ -332,7 +681,8 @@
             data: {
                 action: 'register_user_slot',
                 slot_id: slotId,
-                user_name: userName,
+                user_first_name: userFirstName,
+                user_last_name: userLastName,
                 user_email: userEmail,
                 user_phone: userPhone,
                 nonce: tsb_ajax.nonce
@@ -341,7 +691,7 @@
                 if (response.success) {
                     showSuccess('Inscription réussie !');
                     closeModal();
-                    loadCurrentDateSlots();
+                    loadCurrentView();
                 } else {
                     showError(response.data || 'Erreur lors de l\'inscription.');
                 }
@@ -373,7 +723,7 @@
             success: function(response) {
                 if (response.success) {
                     showSuccess(response.data);
-                    loadCurrentDateSlots();
+                    loadCurrentView();
                 } else {
                     showError(response.data || 'Erreur lors de la suppression.');
                 }
@@ -397,10 +747,11 @@
     /**
      * Show loading state
      */
-    function showLoading() {
-        $('#tsb-table-body').html(`
+    function showLoading(target = '#tsb-table-body') {
+        const colspan = target === '#tsb-weekly-table-body' ? '8' : '2';
+        $(target).html(`
             <tr>
-                <td colspan="2" class="tsb-loading">
+                <td colspan="${colspan}" class="tsb-loading">
                     <div class="tsb-spinner"></div>
                     Chargement des créneaux...
                 </td>
@@ -471,6 +822,86 @@
     function isValidTime(time) {
         const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
         return timeRegex.test(time);
+    }
+
+    /**
+     * Handle user unregistration
+     */
+    function handleUserUnregistration(event) {
+        event.preventDefault();
+        
+        const slotId = $('#tsb-unregister-slot-id').val();
+        const userEmail = $('#tsb-unregister-email').val();
+        const reason = $('#tsb-unregister-reason').val();
+        
+        if (!slotId || !userEmail) {
+            showError('Veuillez remplir tous les champs obligatoires.');
+            return;
+        }
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'unregister_user_slot',
+                slot_id: slotId,
+                user_email: userEmail,
+                reason: reason,
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess('Désinscription réussie !');
+                    closeModal();
+                    loadCurrentView();
+                } else {
+                    showError(response.data || 'Erreur lors de la désinscription.');
+                }
+            },
+            error: function() {
+                showError('Erreur de communication avec le serveur.');
+            }
+        });
+    }
+
+    /**
+     * Handle slot blocking/unblocking
+     */
+    function handleBlockSlot(event) {
+        event.preventDefault();
+        
+        const slotId = $('#tsb-block-slot-id').val();
+        const isBlocked = $('#tsb-block-checkbox').is(':checked') ? 1 : 0;
+        const blockReason = $('#tsb-block-reason').val();
+        
+        if (!slotId) {
+            showError('Erreur: ID du créneau manquant.');
+            return;
+        }
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'toggle_slot_block',
+                slot_id: slotId,
+                is_blocked: isBlocked,
+                block_reason: blockReason,
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess(response.data);
+                    closeModal();
+                    loadCurrentView();
+                } else {
+                    showError(response.data || 'Erreur lors de la modification du créneau.');
+                }
+            },
+            error: function() {
+                showError('Erreur de communication avec le serveur.');
+            }
+        });
     }
 
 })(jQuery);

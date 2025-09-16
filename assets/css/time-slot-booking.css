@@ -10,6 +10,48 @@
     overflow: hidden;
 }
 
+/* Weekly View Toggle */
+.tsb-view-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background: #f6f8fa;
+    border-bottom: 1px solid #d0d7de;
+    gap: 15px;
+}
+
+.tsb-view-toggle {
+    display: flex;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.tsb-view-btn {
+    padding: 8px 16px;
+    border: none;
+    background: white;
+    color: #24292f;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-right: 1px solid #d0d7de;
+}
+
+.tsb-view-btn:last-child {
+    border-right: none;
+}
+
+.tsb-view-btn.active {
+    background: #0969da;
+    color: white;
+}
+
+.tsb-view-btn:hover:not(.active) {
+    background: #f6f8fa;
+}
+
 /* Date Navigation */
 .tsb-date-navigation {
     display: flex;
@@ -55,6 +97,104 @@
     background: #f6f8fa;
     border-bottom: 1px solid #d0d7de;
     text-align: right;
+}
+
+/* Weekly Calendar View */
+.tsb-weekly-view {
+    overflow-x: auto;
+    background: white;
+}
+
+.tsb-weekly-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: white;
+}
+
+.tsb-weekly-table th {
+    background: #f1f8ff;
+    color: #24292f;
+    font-weight: 600;
+    padding: 12px 8px;
+    text-align: center;
+    border: 1px solid #d0d7de;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.tsb-weekly-table th.time-header {
+    background: #f6f8fa;
+    width: 100px;
+    min-width: 100px;
+}
+
+.tsb-weekly-table td {
+    padding: 8px;
+    border: 1px solid #d0d7de;
+    vertical-align: top;
+    height: 60px;
+    position: relative;
+}
+
+.tsb-weekly-table td.time-cell {
+    background: #f6f8fa;
+    font-weight: 500;
+    color: #0969da;
+    text-align: center;
+    width: 100px;
+    min-width: 100px;
+    white-space: nowrap;
+}
+
+.tsb-weekly-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    height: 100%;
+}
+
+.tsb-slot-item-mini {
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    min-height: 20px;
+}
+
+.tsb-slot-item-mini:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tsb-slot-available-mini {
+    background: #d1e7dd;
+    border: 1px solid #badbcc;
+    color: #0f5132;
+}
+
+.tsb-slot-full-mini {
+    background: #f8d7da;
+    border: 1px solid #f5c2c7;
+    color: #842029;
+}
+
+.tsb-slot-blocked-mini {
+    background: #e2e3e5;
+    border: 1px solid #d3d3d4;
+    color: #495057;
+    cursor: not-allowed;
+}
+
+.tsb-slot-capacity-mini {
+    font-size: 10px;
+    opacity: 0.8;
 }
 
 /* Table Styling - Excel-like */
@@ -132,6 +272,12 @@
     opacity: 0.7;
 }
 
+.tsb-slot-blocked {
+    border-color: #8c959f;
+    background: #f6f8fa;
+    opacity: 0.6;
+}
+
 .tsb-slot-info {
     flex-grow: 1;
 }
@@ -145,6 +291,36 @@
 .tsb-slot-actions {
     display: flex;
     gap: 8px;
+}
+
+.tsb-user-registration-info {
+    display: none;
+    position: absolute;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.tsb-user-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.tsb-user-item {
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tsb-user-item:last-child {
+    border-bottom: none;
 }
 
 /* Buttons */
@@ -199,9 +375,25 @@
     border-color: #a40e26;
 }
 
+.tsb-btn-warning {
+    background: #bf8700;
+    color: white;
+    border-color: #bf8700;
+}
+
+.tsb-btn-warning:hover {
+    background: #996f00;
+    border-color: #996f00;
+}
+
 .tsb-btn-small {
     padding: 4px 8px;
     font-size: 11px;
+}
+
+.tsb-btn-mini {
+    padding: 2px 6px;
+    font-size: 10px;
 }
 
 /* Modal Styling */
@@ -283,6 +475,15 @@
     box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
 }
 
+.tsb-form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.tsb-form-row .tsb-form-group {
+    flex: 1;
+}
+
 /* Empty State */
 .tsb-empty-state {
     text-align: center;
@@ -318,48 +519,74 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
+/* Responsive Design - Mobile First */
+/* Mobile styles (default) */
+@media (max-width: 767px) {
     #tsb-booking-container {
-        margin: 10px 0;
+        margin: 10px;
+        border-radius: 8px;
+    }
+    
+    .tsb-view-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
     }
     
     .tsb-date-navigation {
         flex-direction: column;
         gap: 10px;
+        padding: 12px;
     }
     
-    .tsb-table {
+    .tsb-nav-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+    }
+    
+    #tsb-current-date {
+        font-size: 16px;
+        min-width: auto;
+    }
+    
+    /* Hide daily table on mobile, show weekly */
+    .tsb-daily-view {
+        display: none;
+    }
+    
+    .tsb-weekly-view {
+        display: block;
+    }
+    
+    .tsb-weekly-table {
+        min-width: 100%;
         font-size: 12px;
     }
     
-    .tsb-table td,
-    .tsb-th {
-        padding: 8px 12px;
+    .tsb-weekly-table th,
+    .tsb-weekly-table td {
+        padding: 6px 4px;
+        min-width: 80px;
     }
     
-    .tsb-time-cell {
-        width: 120px;
+    .tsb-weekly-table th.time-header,
+    .tsb-weekly-table td.time-cell {
+        width: 60px;
+        min-width: 60px;
+        font-size: 10px;
     }
     
-    .tsb-slot-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+    .tsb-slot-item-mini {
+        font-size: 9px;
+        padding: 2px 4px;
+        min-height: 16px;
     }
     
-    .tsb-slot-actions {
-        width: 100%;
-        justify-content: flex-end;
+    .tsb-slot-capacity-mini {
+        font-size: 8px;
     }
     
-    .tsb-modal-content {
-        margin: 5% auto;
-        width: 95%;
-    }
-}
-
-@media (max-width: 480px) {
+    /* Card layout for time slots on very small screens */
     .tsb-table,
     .tsb-table tbody,
     .tsb-table tr,
@@ -373,28 +600,131 @@
         margin-bottom: 10px;
         border-radius: 6px;
         overflow: hidden;
+        background: white;
     }
     
     .tsb-table td {
         border: none;
-        border-bottom: 1px solid #d0d7de;
+        border-bottom: 1px solid #eee;
         position: relative;
-        padding-left: 50%;
+        padding: 12px;
     }
     
-    .tsb-table td:before {
-        content: attr(data-label);
-        position: absolute;
-        left: 6px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        font-weight: bold;
-        color: #24292f;
+    .tsb-table td:last-child {
+        border-bottom: none;
+    }
+    
+    .tsb-time-cell {
+        background: #f1f8ff !important;
+        color: #0969da !important;
+        font-weight: 600;
+        text-align: center;
+        width: 100% !important;
+    }
+    
+    .tsb-slot-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin: 8px 0;
+    }
+    
+    .tsb-slot-actions {
+        width: 100%;
+        justify-content: flex-end;
     }
     
     .tsb-th {
         display: none;
+    }
+    
+    .tsb-modal-content {
+        margin: 5% auto;
+        width: 95%;
+        padding: 16px;
+    }
+    
+    .tsb-form-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .tsb-admin-controls {
+        text-align: center;
+        padding: 12px;
+    }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .tsb-weekly-table {
+        font-size: 13px;
+    }
+    
+    .tsb-weekly-table th,
+    .tsb-weekly-table td {
+        padding: 8px 6px;
+    }
+    
+    .tsb-slot-item-mini {
+        font-size: 10px;
+        padding: 3px 5px;
+    }
+    
+    .tsb-modal-content {
+        width: 80%;
+        max-width: 600px;
+    }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+    .tsb-weekly-view {
+        display: block;
+    }
+    
+    .tsb-daily-view {
+        display: block;
+    }
+    
+    .tsb-view-controls {
+        display: flex;
+    }
+    
+    .tsb-weekly-table {
+        font-size: 14px;
+    }
+    
+    .tsb-weekly-table th,
+    .tsb-weekly-table td {
+        padding: 10px 8px;
+    }
+    
+    .tsb-slot-item-mini {
+        font-size: 11px;
+        padding: 4px 6px;
+    }
+}
+
+/* Large desktop styles */
+@media (min-width: 1200px) {
+    #tsb-booking-container {
+        max-width: 1200px;
+        margin: 20px auto;
+    }
+    
+    .tsb-weekly-table {
+        font-size: 14px;
+    }
+    
+    .tsb-weekly-table th,
+    .tsb-weekly-table td {
+        padding: 12px 10px;
+    }
+    
+    .tsb-slot-item-mini {
+        font-size: 12px;
+        padding: 5px 7px;
     }
 }
 
@@ -420,6 +750,9 @@
     margin: 10px 0;
     border-radius: 6px;
     border: 1px solid;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .tsb-message-success {
@@ -438,4 +771,205 @@
     background: #fff8c5;
     border-color: #bf8700;
     color: #7d4e00;
+}
+
+.tsb-message-info {
+    background: #dbeafe;
+    border-color: #0969da;
+    color: #0860ca;
+}
+
+/* User management and unregistration */
+.tsb-unregister-btn {
+    background: #f85149;
+    color: white;
+    border-color: #f85149;
+}
+
+.tsb-unregister-btn:hover {
+    background: #da3633;
+    border-color: #da3633;
+}
+
+.tsb-my-registrations {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.tsb-my-registrations h4 {
+    margin: 0 0 12px 0;
+    color: #24292f;
+    font-size: 16px;
+}
+
+.tsb-registration-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+.tsb-registration-info {
+    flex-grow: 1;
+}
+
+.tsb-registration-date {
+    font-weight: 500;
+    color: #24292f;
+}
+
+.tsb-registration-time {
+    font-size: 12px;
+    color: #656d76;
+}
+
+/* Block slot functionality */
+.tsb-block-btn {
+    background: #f85149;
+    color: white;
+    border-color: #f85149;
+}
+
+.tsb-block-btn:hover {
+    background: #da3633;
+    border-color: #da3633;
+}
+
+.tsb-unblock-btn {
+    background: #1a7f37;
+    color: white;
+    border-color: #1a7f37;
+}
+
+.tsb-unblock-btn:hover {
+    background: #116329;
+    border-color: #116329;
+}
+
+/* Planning management */
+.tsb-planning-selector {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.tsb-planning-selector select {
+    padding: 6px 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background: white;
+    color: #24292f;
+}
+
+/* Tooltips */
+.tsb-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.tsb-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #24292f;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 5px;
+}
+
+.tsb-tooltip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #24292f;
+    z-index: 1000;
+}
+
+/* Animation classes */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+.tsb-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.tsb-slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Loading and skeleton states */
+.tsb-skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: tsb-skeleton 1.5s infinite;
+}
+
+@keyframes tsb-skeleton {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.tsb-skeleton-text {
+    height: 14px;
+    margin: 4px 0;
+    border-radius: 2px;
+}
+
+.tsb-skeleton-button {
+    height: 32px;
+    width: 80px;
+    border-radius: 6px;
+}
+
+/* Print styles */
+@media print {
+    .tsb-nav-btn,
+    .tsb-admin-controls,
+    .tsb-btn,
+    .tsb-view-controls {
+        display: none !important;
+    }
+    
+    .tsb-weekly-table,
+    .tsb-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    .tsb-weekly-table th,
+    .tsb-weekly-table td,
+    .tsb-table th,
+    .tsb-table td {
+        border: 1px solid #000;
+        padding: 8px;
+    }
+    
+    #tsb-booking-container {
+        border: none;
+        box-shadow: none;
+    }
 }
