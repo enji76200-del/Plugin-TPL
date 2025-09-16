@@ -249,7 +249,7 @@
         const slotId = $(event.target).data('slot-id');
         $('#tsb-register-slot-id').val(slotId);
         $('#tsb-register-modal').show();
-        $('#tsb-user-name').focus();
+        $('#tsb-user-first-name').focus();
     }
 
     /**
@@ -317,11 +317,12 @@
         event.preventDefault();
         
         const slotId = $('#tsb-register-slot-id').val();
-        const userName = $('#tsb-user-name').val();
+        const userFirstName = $('#tsb-user-first-name').val();
+        const userLastName = $('#tsb-user-last-name').val();
         const userEmail = $('#tsb-user-email').val();
         const userPhone = $('#tsb-user-phone').val();
         
-        if (!slotId || !userName || !userEmail) {
+        if (!slotId || !userFirstName || !userLastName || !userEmail) {
             showError('Veuillez remplir tous les champs obligatoires.');
             return;
         }
@@ -332,7 +333,8 @@
             data: {
                 action: 'register_user_slot',
                 slot_id: slotId,
-                user_name: userName,
+                user_first_name: userFirstName,
+                user_last_name: userLastName,
                 user_email: userEmail,
                 user_phone: userPhone,
                 nonce: tsb_ajax.nonce

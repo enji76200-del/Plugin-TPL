@@ -38,6 +38,15 @@ class TimeSlotBooking {
         add_action('wp_ajax_nopriv_register_user_slot', array($this, 'ajax_register_user_slot'));
         add_action('wp_ajax_get_date_slots', array($this, 'ajax_get_date_slots'));
         add_action('wp_ajax_nopriv_get_date_slots', array($this, 'ajax_get_date_slots'));
+        
+        // New AJAX handlers for enhanced features
+        add_action('wp_ajax_unregister_user_slot', array($this, 'ajax_unregister_user_slot'));
+        add_action('wp_ajax_nopriv_unregister_user_slot', array($this, 'ajax_unregister_user_slot'));
+        add_action('wp_ajax_toggle_slot_block', array($this, 'ajax_toggle_slot_block'));
+        add_action('wp_ajax_get_week_slots', array($this, 'ajax_get_week_slots'));
+        add_action('wp_ajax_nopriv_get_week_slots', array($this, 'ajax_get_week_slots'));
+        add_action('wp_ajax_get_user_registrations', array($this, 'ajax_get_user_registrations'));
+        add_action('wp_ajax_nopriv_get_user_registrations', array($this, 'ajax_get_user_registrations'));
     }
     
     public function init() {
@@ -74,35 +83,95 @@ class TimeSlotBooking {
         
         $charset_collate = $wpdb->get_charset_collate();
         
-        // Time slots table
+        // Planning templates table for multiple plannings
+        $table_plannings = $wpdb->prefix . 'tsb_plannings';
+        $sql_plannings = "CREATE TABLE $table_plannings (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            name varchar(200) NOT NULL,
+            description text,
+            is_active tinyint(1) DEFAULT 1,
+            custom_css text,
+            settings longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id)
+        ) $charset_collate;";
+        
+        // Time slots table - enhanced with planning support and blocking
         $table_slots = $wpdb->prefix . 'tsb_time_slots';
         $sql_slots = "CREATE TABLE $table_slots (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
+            planning_id mediumint(9) NOT NULL DEFAULT 1,
             date date NOT NULL,
             start_time time NOT NULL,
             end_time time NOT NULL,
             capacity int(10) NOT NULL DEFAULT 1,
+            is_blocked tinyint(1) DEFAULT 0,
+            block_reason varchar(255),
+            is_recurring tinyint(1) DEFAULT 0,
+            recurring_pattern varchar(50),
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
-            UNIQUE KEY unique_slot (date, start_time, end_time)
+            UNIQUE KEY unique_slot (planning_id, date, start_time, end_time),
+            FOREIGN KEY (planning_id) REFERENCES $table_plannings(id) ON DELETE CASCADE
         ) $charset_collate;";
         
-        // User registrations table
+        // User registrations table - enhanced with first/last name separation
         $table_registrations = $wpdb->prefix . 'tsb_registrations';
         $sql_registrations = "CREATE TABLE $table_registrations (
             id mediumint(9) NOT NULL AUTO_INCREMENT,
             slot_id mediumint(9) NOT NULL,
-            user_name varchar(100) NOT NULL,
+            user_first_name varchar(50) NOT NULL,
+            user_last_name varchar(50) NOT NULL,
             user_email varchar(100) NOT NULL,
             user_phone varchar(20),
             registered_at datetime DEFAULT CURRENT_TIMESTAMP,
+            expires_at datetime DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 14 DAY)),
+            PRIMARY KEY (id),
+            FOREIGN KEY (slot_id) REFERENCES $table_slots(id) ON DELETE CASCADE
+        ) $charset_collate;";
+        
+        // Unregistration audit table
+        $table_unregistrations = $wpdb->prefix . 'tsb_unregistrations';
+        $sql_unregistrations = "CREATE TABLE $table_unregistrations (
+            id mediumint(9) NOT NULL AUTO_INCREMENT,
+            slot_id mediumint(9) NOT NULL,
+            user_first_name varchar(50) NOT NULL,
+            user_last_name varchar(50) NOT NULL,
+            user_email varchar(100) NOT NULL,
+            user_phone varchar(20),
+            original_registration_id mediumint(9),
+            unregistered_at datetime DEFAULT CURRENT_TIMESTAMP,
+            reason varchar(255),
             PRIMARY KEY (id),
             FOREIGN KEY (slot_id) REFERENCES $table_slots(id) ON DELETE CASCADE
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql_plannings);
         dbDelta($sql_slots);
         dbDelta($sql_registrations);
+        dbDelta($sql_unregistrations);
+        
+        // Insert default planning if none exists
+        $existing_plannings = $wpdb->get_var("SELECT COUNT(*) FROM $table_plannings");
+        if ($existing_plannings == 0) {
+            $wpdb->insert(
+                $table_plannings,
+                array(
+                    'name' => 'Planning Principal',
+                    'description' => 'Planning de réservation par défaut',
+                    'is_active' => 1,
+                    'custom_css' => '',
+                    'settings' => json_encode(array(
+                        'max_advance_days' => 8,
+                        'min_capacity' => 1,
+                        'max_capacity' => 20,
+                        'time_slot_duration' => 60
+                    ))
+                ),
+                array('%s', '%s', '%d', '%s', '%s')
+            );
+        }
     }
     
     public function cleanup() {
@@ -176,8 +245,12 @@ class TimeSlotBooking {
                     <form id="tsb-register-form">
                         <input type="hidden" id="tsb-register-slot-id">
                         <div class="tsb-form-group">
-                            <label><?php _e('Name:', 'time-slot-booking'); ?></label>
-                            <input type="text" id="tsb-user-name" required>
+                            <label><?php _e('First Name:', 'time-slot-booking'); ?></label>
+                            <input type="text" id="tsb-user-first-name" required>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label><?php _e('Last Name:', 'time-slot-booking'); ?></label>
+                            <input type="text" id="tsb-user-last-name" required>
                         </div>
                         <div class="tsb-form-group">
                             <label><?php _e('Email:', 'time-slot-booking'); ?></label>
@@ -255,22 +328,55 @@ class TimeSlotBooking {
         check_ajax_referer('tsb_nonce', 'nonce');
         
         $slot_id = intval($_POST['slot_id']);
-        $user_name = sanitize_text_field($_POST['user_name']);
+        $user_first_name = sanitize_text_field($_POST['user_first_name']);
+        $user_last_name = sanitize_text_field($_POST['user_last_name']);
         $user_email = sanitize_email($_POST['user_email']);
         $user_phone = sanitize_text_field($_POST['user_phone']);
         
         global $wpdb;
-        $table_name = $wpdb->prefix . 'tsb_registrations';
+        $slots_table = $wpdb->prefix . 'tsb_time_slots';
+        $registrations_table = $wpdb->prefix . 'tsb_registrations';
+        
+        // Check if slot exists and is not blocked
+        $slot = $wpdb->get_row($wpdb->prepare("SELECT * FROM $slots_table WHERE id = %d", $slot_id));
+        if (!$slot) {
+            wp_send_json_error(__('Time slot not found', 'time-slot-booking'));
+        }
+        
+        if ($slot->is_blocked) {
+            wp_send_json_error(__('This time slot is blocked', 'time-slot-booking'));
+        }
+        
+        // Check capacity
+        $current_registrations = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $registrations_table 
+            WHERE slot_id = %d AND expires_at > NOW()
+        ", $slot_id));
+        
+        if ($current_registrations >= $slot->capacity) {
+            wp_send_json_error(__('This time slot is full', 'time-slot-booking'));
+        }
+        
+        // Check if user is already registered for this slot
+        $existing_registration = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*) FROM $registrations_table 
+            WHERE slot_id = %d AND user_email = %s AND expires_at > NOW()
+        ", $slot_id, $user_email));
+        
+        if ($existing_registration > 0) {
+            wp_send_json_error(__('You are already registered for this time slot', 'time-slot-booking'));
+        }
         
         $result = $wpdb->insert(
-            $table_name,
+            $registrations_table,
             array(
                 'slot_id' => $slot_id,
-                'user_name' => $user_name,
+                'user_first_name' => $user_first_name,
+                'user_last_name' => $user_last_name,
                 'user_email' => $user_email,
                 'user_phone' => $user_phone
             ),
-            array('%d', '%s', '%s', '%s')
+            array('%d', '%s', '%s', '%s', '%s')
         );
         
         if ($result !== false) {
@@ -299,6 +405,133 @@ class TimeSlotBooking {
         ", $date));
         
         wp_send_json_success($slots);
+    }
+    
+    public function ajax_unregister_user_slot() {
+        check_ajax_referer('tsb_nonce', 'nonce');
+        
+        $slot_id = intval($_POST['slot_id']);
+        $user_email = sanitize_email($_POST['user_email']);
+        
+        global $wpdb;
+        $registrations_table = $wpdb->prefix . 'tsb_registrations';
+        $unregistrations_table = $wpdb->prefix . 'tsb_unregistrations';
+        
+        // Get the registration to audit
+        $registration = $wpdb->get_row($wpdb->prepare("
+            SELECT * FROM $registrations_table 
+            WHERE slot_id = %d AND user_email = %s AND expires_at > NOW()
+        ", $slot_id, $user_email));
+        
+        if (!$registration) {
+            wp_send_json_error(__('Registration not found', 'time-slot-booking'));
+        }
+        
+        // Create audit record
+        $wpdb->insert(
+            $unregistrations_table,
+            array(
+                'slot_id' => $registration->slot_id,
+                'user_first_name' => $registration->user_first_name,
+                'user_last_name' => $registration->user_last_name,
+                'user_email' => $registration->user_email,
+                'user_phone' => $registration->user_phone,
+                'original_registration_id' => $registration->id,
+                'reason' => sanitize_text_field($_POST['reason'] ?? 'User unregistered')
+            ),
+            array('%d', '%s', '%s', '%s', '%s', '%d', '%s')
+        );
+        
+        // Remove the registration
+        $result = $wpdb->delete(
+            $registrations_table,
+            array('id' => $registration->id),
+            array('%d')
+        );
+        
+        if ($result !== false) {
+            wp_send_json_success(__('Unregistration successful', 'time-slot-booking'));
+        } else {
+            wp_send_json_error(__('Unregistration failed', 'time-slot-booking'));
+        }
+    }
+    
+    public function ajax_toggle_slot_block() {
+        check_ajax_referer('tsb_nonce', 'nonce');
+        
+        if (!current_user_can('manage_options')) {
+            wp_die(__('Unauthorized', 'time-slot-booking'));
+        }
+        
+        $slot_id = intval($_POST['slot_id']);
+        $is_blocked = intval($_POST['is_blocked']);
+        $block_reason = sanitize_text_field($_POST['block_reason'] ?? '');
+        
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'tsb_time_slots';
+        
+        $result = $wpdb->update(
+            $table_name,
+            array(
+                'is_blocked' => $is_blocked,
+                'block_reason' => $block_reason
+            ),
+            array('id' => $slot_id),
+            array('%d', '%s'),
+            array('%d')
+        );
+        
+        if ($result !== false) {
+            $message = $is_blocked ? __('Time slot blocked successfully', 'time-slot-booking') : __('Time slot unblocked successfully', 'time-slot-booking');
+            wp_send_json_success($message);
+        } else {
+            wp_send_json_error(__('Failed to update time slot', 'time-slot-booking'));
+        }
+    }
+    
+    public function ajax_get_week_slots() {
+        check_ajax_referer('tsb_nonce', 'nonce');
+        
+        $start_date = sanitize_text_field($_POST['start_date']);
+        $planning_id = intval($_POST['planning_id'] ?? 1);
+        
+        global $wpdb;
+        $slots_table = $wpdb->prefix . 'tsb_time_slots';
+        $registrations_table = $wpdb->prefix . 'tsb_registrations';
+        
+        // Get slots for the week (7 days from start_date)
+        $end_date = date('Y-m-d', strtotime($start_date . ' +6 days'));
+        
+        $slots = $wpdb->get_results($wpdb->prepare("
+            SELECT s.*, COUNT(r.id) as registered_count
+            FROM $slots_table s
+            LEFT JOIN $registrations_table r ON s.id = r.slot_id AND r.expires_at > NOW()
+            WHERE s.date BETWEEN %s AND %s AND s.planning_id = %d
+            GROUP BY s.id
+            ORDER BY s.date, s.start_time
+        ", $start_date, $end_date, $planning_id));
+        
+        wp_send_json_success($slots);
+    }
+    
+    public function ajax_get_user_registrations() {
+        check_ajax_referer('tsb_nonce', 'nonce');
+        
+        $user_email = sanitize_email($_POST['user_email']);
+        
+        global $wpdb;
+        $slots_table = $wpdb->prefix . 'tsb_time_slots';
+        $registrations_table = $wpdb->prefix . 'tsb_registrations';
+        
+        $registrations = $wpdb->get_results($wpdb->prepare("
+            SELECT r.*, s.date, s.start_time, s.end_time
+            FROM $registrations_table r
+            JOIN $slots_table s ON r.slot_id = s.id
+            WHERE r.user_email = %s AND r.expires_at > NOW() AND s.date >= CURDATE()
+            ORDER BY s.date, s.start_time
+        ", $user_email));
+        
+        wp_send_json_success($registrations);
     }
 }
 
