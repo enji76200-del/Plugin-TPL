@@ -953,8 +953,6 @@ class TimeSlotBooking {
         $start_date = sanitize_text_field($_POST['start_date']);
         $planning_id = intval($_POST['planning_id'] ?? 1);
 
-        error_log('PHP: ajax_get_week_slots called with start_date: ' . $start_date . ', planning_id: ' . $planning_id);
-
         global $wpdb;
         $slots_table = $wpdb->prefix . 'tsb_time_slots';
         $registrations_table = $wpdb->prefix . 'tsb_registrations';
@@ -964,12 +962,9 @@ class TimeSlotBooking {
             $slots = array();
             for ($i = 0; $i < 7; $i++) {
                 $current_date = date('Y-m-d', strtotime($start_date . ' +' . $i . ' days'));
-                error_log('PHP: Generating slots for date: ' . $current_date);
                 $day_slots = $this->get_fixed_slots_for_date($current_date);
-                error_log('PHP: Generated ' . count($day_slots) . ' slots for date: ' . $current_date);
                 $slots = array_merge($slots, $day_slots);
             }
-            error_log('PHP: Total slots generated: ' . count($slots));
         } else {
             // Get slots for the week (7 days from start_date)
             $end_date = date('Y-m-d', strtotime($start_date . ' +6 days'));
