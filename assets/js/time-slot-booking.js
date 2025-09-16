@@ -12,20 +12,110 @@
     let currentWeekStart = new Date();
     let isAdmin = false;
     let blockingMode = false;
+    let currentPlanning = 1;
+    let plannings = [];
 
     // Initialize the plugin
     $(document).ready(function() {
+        initializePlanningNavigation();
         initializeDateNavigation();
         initializeViewControls();
         bindEvents();
+        loadPlannings();
         loadCurrentView();
         
         // Check if user has admin privileges
         isAdmin = $('[id*="tsb-add-slot"]').length > 0;
         
+        // Get current planning from container
+        const container = $('#tsb-booking-container');
+        if (container.data('current-planning')) {
+            currentPlanning = parseInt(container.data('current-planning'));
+            tsb_ajax.current_planning = currentPlanning;
+        }
+        
         // Set initial week start
         setWeekStart(currentDate);
     });
+
+    /**
+     * Initialize planning navigation
+     */
+    function initializePlanningNavigation() {
+        // Planning selector change
+        $(document).on('change', '#tsb-planning-select', function() {
+            currentPlanning = parseInt($(this).val());
+            tsb_ajax.current_planning = currentPlanning;
+            updatePlanningNavigationButtons();
+            loadCurrentView();
+        });
+        
+        // Planning navigation buttons
+        $(document).on('click', '#tsb-prev-planning', function() {
+            navigatePlanning(-1);
+        });
+        
+        $(document).on('click', '#tsb-next-planning', function() {
+            navigatePlanning(1);
+        });
+    }
+    
+    /**
+     * Load available plannings
+     */
+    function loadPlannings() {
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_plannings',
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    plannings = response.data;
+                    updatePlanningNavigationButtons();
+                }
+            },
+            error: function() {
+                console.log('Error loading plannings');
+            }
+        });
+    }
+    
+    /**
+     * Navigate to previous/next planning
+     */
+    function navigatePlanning(direction) {
+        if (plannings.length === 0) return;
+        
+        const currentIndex = plannings.findIndex(p => p.id == currentPlanning);
+        if (currentIndex === -1) return;
+        
+        let newIndex = currentIndex + direction;
+        if (newIndex < 0) newIndex = plannings.length - 1;
+        if (newIndex >= plannings.length) newIndex = 0;
+        
+        currentPlanning = parseInt(plannings[newIndex].id);
+        tsb_ajax.current_planning = currentPlanning;
+        
+        // Update selector
+        $('#tsb-planning-select').val(currentPlanning);
+        
+        updatePlanningNavigationButtons();
+        loadCurrentView();
+    }
+    
+    /**
+     * Update planning navigation button states
+     */
+    function updatePlanningNavigationButtons() {
+        if (plannings.length <= 1) {
+            $('#tsb-prev-planning, #tsb-next-planning').prop('disabled', true);
+        } else {
+            $('#tsb-prev-planning, #tsb-next-planning').prop('disabled', false);
+        }
+    }
 
     /**
      * Initialize view controls
@@ -185,6 +275,9 @@
         $(document).on('click', '.tsb-close', closeModal);
         $(document).on('submit', '#tsb-add-slot-form', handleAddSlot);
         
+        // Generate weekly slots button
+        $(document).on('click', '#tsb-generate-weekly-btn', handleGenerateWeeklySlots);
+        
         // User registration
         $(document).on('click', '.tsb-register-btn', showRegisterModal);
         $(document).on('submit', '#tsb-register-form', handleUserRegistration);
@@ -234,6 +327,7 @@
             data: {
                 action: 'get_date_slots',
                 date: dateString,
+                planning_id: currentPlanning,
                 nonce: tsb_ajax.nonce
             },
             success: function(response) {
@@ -386,7 +480,7 @@
             data: {
                 action: 'get_week_slots',
                 start_date: startDateString,
-                planning_id: 1, // Default planning
+                planning_id: currentPlanning,
                 nonce: tsb_ajax.nonce
             },
             success: function(response) {
@@ -641,6 +735,7 @@
                 start_time: startTime,
                 end_time: endTime,
                 capacity: capacity,
+                planning_id: currentPlanning,
                 nonce: tsb_ajax.nonce
             },
             success: function(response) {
@@ -654,6 +749,36 @@
             },
             error: function() {
                 showError('Erreur de communication avec le serveur.');
+            }
+        });
+    }
+
+    /**
+     * Handle generate weekly slots
+     */
+    function handleGenerateWeeklySlots() {
+        if (!confirm('Générer les créneaux de la semaine type pour ce planning ? Cela ajoutera les créneaux manquants pour les 7 prochains jours.')) {
+            return;
+        }
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'generate_weekly_slots',
+                planning_id: currentPlanning,
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess(response.data || tsb_ajax.messages.generate_weekly_success);
+                    loadCurrentView();
+                } else {
+                    showError(response.data || tsb_ajax.messages.generate_weekly_error);
+                }
+            },
+            error: function() {
+                showError(tsb_ajax.messages.generate_weekly_error);
             }
         });
     }
