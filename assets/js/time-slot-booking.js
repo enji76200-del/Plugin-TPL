@@ -565,17 +565,23 @@
 
         slots.forEach(slot => {
             const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
-            // Calculer l'index du jour par rapport à la date de début de la semaine
+            // Calculer l'index du jour par rapport au début de la semaine (lundi)
             const slotDate = new Date(slot.date + 'T00:00:00');
-            const weekStartDate = new Date(startDateString + 'T00:00:00'); // Utiliser la date envoyée au serveur
             slotDate.setHours(0, 0, 0, 0);
-            weekStartDate.setHours(0, 0, 0, 0);
 
-            // Calculer la différence en jours par rapport à la date de début
+            // Calculer le début de la semaine (lundi) pour la date donnée
+            const weekStartDate = new Date(startDateString + 'T00:00:00');
+            weekStartDate.setHours(0, 0, 0, 0);
+            // Trouver le lundi de la semaine contenant startDateString
+            const dayOfWeek = weekStartDate.getDay(); // 0 = dimanche, 1 = lundi, etc.
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Nombre de jours à soustraire pour arriver au lundi
+            weekStartDate.setDate(weekStartDate.getDate() - daysToMonday);
+
+            // Calculer la différence en jours par rapport au lundi de la semaine
             const diffTime = slotDate.getTime() - weekStartDate.getTime();
             const dayOffset = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-            console.log('Slot:', slot.start_time, '-', slot.end_time, 'Date:', slot.date, 'WeekStart:', startDateString, 'dayOffset:', dayOffset);
+            console.log('Slot:', slot.start_time, '-', slot.end_time, 'Date:', slot.date, 'WeekStart (Monday):', weekStartDate.toISOString().split('T')[0], 'dayOffset:', dayOffset);
 
             timeSlots.add(timeKey);
 
@@ -593,12 +599,19 @@
         // Sort time slots
         const sortedTimeSlots = Array.from(timeSlots).sort();
 
-        // Générer les dates des 7 jours consécutifs à partir d'aujourd'hui
+        // Générer les dates des 7 jours de la semaine à partir du lundi
         const days = [];
         const today = new Date();
+        // Trouver le lundi de la semaine actuelle
+        const monday = new Date(today);
+        const dayOfWeek = monday.getDay(); // 0 = dimanche, 1 = lundi, etc.
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Nombre de jours à soustraire pour arriver au lundi
+        monday.setDate(today.getDate() - daysToMonday);
+
+        // Générer les 7 jours de la semaine (lundi à dimanche)
         for (let i = 0; i < 7; i++) {
-            const d = new Date(today);
-            d.setDate(today.getDate() + i);
+            const d = new Date(monday);
+            d.setDate(monday.getDate() + i);
             days.push(d);
         }
 
@@ -617,7 +630,7 @@
             const row = $('<tr></tr>');
             row.append(`<td class="time-cell">${startTime}<br><small>${endTime}</small></td>`);
 
-            // Add cells for each of the 7 days (0 = aujourd'hui, 1 = demain, etc.)
+            // Add cells for each of the 7 days (0 = lundi, 1 = mardi, etc.)
             for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
                 const dayCell = $('<td class="tsb-weekly-slot"></td>');
                 if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][dayIndex]) {
