@@ -8,32 +8,98 @@
 
     // Global variables
     let currentDate = new Date();
+    let currentView = 'daily'; // 'daily' or 'weekly'
+    let currentWeekStart = new Date();
     let isAdmin = false;
+    let blockingMode = false;
 
     // Initialize the plugin
     $(document).ready(function() {
         initializeDateNavigation();
+        initializeViewControls();
         bindEvents();
-        loadCurrentDateSlots();
+        loadCurrentView();
         
         // Check if user has admin privileges
         isAdmin = $('[id*="tsb-add-slot"]').length > 0;
+        
+        // Set initial week start
+        setWeekStart(currentDate);
     });
 
     /**
-     * Initialize date navigation
+     * Initialize view controls
      */
+    function initializeViewControls() {
+        $('.tsb-view-btn').on('click', function() {
+            const view = $(this).data('view');
+            switchView(view);
+        });
+    }
+    
+    /**
+     * Switch between daily and weekly views
+     */
+    function switchView(view) {
+        currentView = view;
+        
+        // Update active button
+        $('.tsb-view-btn').removeClass('active');
+        $(`.tsb-view-btn[data-view="${view}"]`).addClass('active');
+        
+        // Show/hide appropriate views
+        if (view === 'weekly') {
+            $('#tsb-daily-view').hide();
+            $('#tsb-weekly-view').show();
+            loadWeeklyView();
+        } else {
+            $('#tsb-weekly-view').hide();
+            $('#tsb-daily-view').show();
+            loadCurrentDateSlots();
+        }
+        
+        updateDateDisplay();
+    }
+    
+    /**
+     * Set week start date (Monday)
+     */
+    function setWeekStart(date) {
+        currentWeekStart = new Date(date);
+        const day = currentWeekStart.getDay();
+        const diff = currentWeekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+        currentWeekStart.setDate(diff);
+    }
+    
+    /**
+     * Load current view based on selected view type
+     */
+    function loadCurrentView() {
+        if (currentView === 'weekly') {
+            loadWeeklyView();
+        } else {
+            loadCurrentDateSlots();
+        }
+    }
     function initializeDateNavigation() {
         // Set current date
         updateDateDisplay();
         
         // Bind navigation events
         $('#tsb-prev-date').on('click', function() {
-            navigateDate(-1);
+            if (currentView === 'weekly') {
+                navigateWeek(-1);
+            } else {
+                navigateDate(-1);
+            }
         });
         
         $('#tsb-next-date').on('click', function() {
-            navigateDate(1);
+            if (currentView === 'weekly') {
+                navigateWeek(1);
+            } else {
+                navigateDate(1);
+            }
         });
         
         // Disable previous date if it's today or earlier
@@ -49,18 +115,46 @@
         updateNavigationButtons();
         loadCurrentDateSlots();
     }
+    
+    /**
+     * Navigate to previous/next week
+     */
+    function navigateWeek(direction) {
+        currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+        currentDate = new Date(currentWeekStart);
+        updateDateDisplay();
+        updateNavigationButtons();
+        loadWeeklyView();
+    }
 
     /**
      * Update date display
      */
     function updateDateDisplay() {
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        $('#tsb-current-date').text(currentDate.toLocaleDateString('fr-FR', options));
+        if (currentView === 'weekly') {
+            const endDate = new Date(currentWeekStart);
+            endDate.setDate(endDate.getDate() + 6);
+            
+            const startStr = currentWeekStart.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short' 
+            });
+            const endStr = endDate.toLocaleDateString('fr-FR', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
+            $('#tsb-current-date').text(`Semaine du ${startStr} au ${endStr}`);
+        } else {
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            $('#tsb-current-date').text(currentDate.toLocaleDateString('fr-FR', options));
+        }
     }
 
     /**
@@ -235,6 +329,152 @@
     }
 
     /**
+     * Load weekly view
+     */
+    function loadWeeklyView() {
+        showLoading('#tsb-weekly-table-body');
+        
+        const startDateString = formatDateForServer(currentWeekStart);
+        
+        $.ajax({
+            url: tsb_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'get_week_slots',
+                start_date: startDateString,
+                planning_id: 1, // Default planning
+                nonce: tsb_ajax.nonce
+            },
+            success: function(response) {
+                if (response.success) {
+                    renderWeeklySlots(response.data);
+                } else {
+                    showError(response.data || tsb_ajax.messages.error);
+                }
+            },
+            error: function() {
+                showError(tsb_ajax.messages.error);
+            },
+            complete: function() {
+                hideLoading();
+            }
+        });
+    }
+
+    /**
+     * Render weekly slots
+     */
+    function renderWeeklySlots(slots) {
+        const tbody = $('#tsb-weekly-table-body');
+        tbody.empty();
+        
+        if (!slots || slots.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="8" class="tsb-empty-state">
+                        <h4>Aucun créneau disponible</h4>
+                        <p>Aucun créneau horaire n'a été défini pour cette semaine.</p>
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        // Group slots by time and day
+        const slotsByTimeAndDay = {};
+        const timeSlots = new Set();
+        
+        slots.forEach(slot => {
+            const timeKey = `${slot.start_time.substring(0, 5)}-${slot.end_time.substring(0, 5)}`;
+            const dayIndex = new Date(slot.date).getDay();
+            const adjustedDayIndex = dayIndex === 0 ? 6 : dayIndex - 1; // Convert to Monday = 0
+            
+            timeSlots.add(timeKey);
+            
+            if (!slotsByTimeAndDay[timeKey]) {
+                slotsByTimeAndDay[timeKey] = {};
+            }
+            
+            if (!slotsByTimeAndDay[timeKey][adjustedDayIndex]) {
+                slotsByTimeAndDay[timeKey][adjustedDayIndex] = [];
+            }
+            
+            slotsByTimeAndDay[timeKey][adjustedDayIndex].push(slot);
+        });
+        
+        // Sort time slots
+        const sortedTimeSlots = Array.from(timeSlots).sort();
+        
+        // Render each time slot row
+        sortedTimeSlots.forEach(timeKey => {
+            const [startTime, endTime] = timeKey.split('-');
+            const row = $(`
+                <tr>
+                    <td class="time-cell">${startTime}<br><small>${endTime}</small></td>
+                </tr>
+            `);
+            
+            // Add cells for each day of the week
+            for (let day = 0; day < 7; day++) {
+                const dayCell = $('<td class="tsb-weekly-slot"></td>');
+                
+                if (slotsByTimeAndDay[timeKey] && slotsByTimeAndDay[timeKey][day]) {
+                    slotsByTimeAndDay[timeKey][day].forEach(slot => {
+                        const slotElement = renderWeeklySlotItem(slot);
+                        dayCell.append(slotElement);
+                    });
+                }
+                
+                row.append(dayCell);
+            }
+            
+            tbody.append(row);
+        });
+    }
+
+    /**
+     * Render individual weekly slot item
+     */
+    function renderWeeklySlotItem(slot) {
+        const isAvailable = parseInt(slot.registered_count) < parseInt(slot.capacity);
+        const isBlocked = parseInt(slot.is_blocked) === 1;
+        
+        let slotClass = 'tsb-slot-item-mini ';
+        if (isBlocked) {
+            slotClass += 'tsb-slot-blocked-mini';
+        } else if (isAvailable) {
+            slotClass += 'tsb-slot-available-mini';
+        } else {
+            slotClass += 'tsb-slot-full-mini';
+        }
+        
+        let status = '';
+        if (isBlocked) {
+            status = 'Bloqué';
+        } else if (isAvailable) {
+            status = 'Libre';
+        } else {
+            status = 'Complet';
+        }
+        
+        const slotElement = $(`
+            <div class="${slotClass}" data-slot-id="${slot.id}" title="${status}">
+                <div class="tsb-slot-status-mini">${status}</div>
+                <div class="tsb-slot-capacity-mini">${slot.registered_count}/${slot.capacity}</div>
+            </div>
+        `);
+        
+        // Add click handlers
+        if (!isBlocked && isAvailable) {
+            slotElement.on('click', function() {
+                showRegisterModal({ target: this });
+            });
+        }
+        
+        return slotElement;
+    }
+
+    /**
      * Show add slot modal
      */
     function showAddSlotModal() {
@@ -343,7 +583,7 @@
                 if (response.success) {
                     showSuccess('Inscription réussie !');
                     closeModal();
-                    loadCurrentDateSlots();
+                    loadCurrentView();
                 } else {
                     showError(response.data || 'Erreur lors de l\'inscription.');
                 }
@@ -375,7 +615,7 @@
             success: function(response) {
                 if (response.success) {
                     showSuccess(response.data);
-                    loadCurrentDateSlots();
+                    loadCurrentView();
                 } else {
                     showError(response.data || 'Erreur lors de la suppression.');
                 }
@@ -399,10 +639,11 @@
     /**
      * Show loading state
      */
-    function showLoading() {
-        $('#tsb-table-body').html(`
+    function showLoading(target = '#tsb-table-body') {
+        const colspan = target === '#tsb-weekly-table-body' ? '8' : '2';
+        $(target).html(`
             <tr>
-                <td colspan="2" class="tsb-loading">
+                <td colspan="${colspan}" class="tsb-loading">
                     <div class="tsb-spinner"></div>
                     Chargement des créneaux...
                 </td>

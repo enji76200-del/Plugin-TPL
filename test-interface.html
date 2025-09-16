@@ -32,10 +32,17 @@
         
         <!-- Plugin Interface -->
         <div id="tsb-booking-container">
-            <div class="tsb-date-navigation">
-                <button id="tsb-prev-date" class="tsb-nav-btn">&larr;</button>
-                <span id="tsb-current-date">Chargement...</span>
-                <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
+            <div class="tsb-view-controls">
+                <div class="tsb-view-toggle">
+                    <button class="tsb-view-btn active" data-view="daily">Vue journalière</button>
+                    <button class="tsb-view-btn" data-view="weekly">Vue hebdomadaire</button>
+                </div>
+                
+                <div class="tsb-date-navigation">
+                    <button id="tsb-prev-date" class="tsb-nav-btn">&larr;</button>
+                    <span id="tsb-current-date">Chargement...</span>
+                    <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
+                </div>
             </div>
             
             <!-- Admin controls (visible for testing) -->
@@ -43,67 +50,144 @@
                 <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
                     Ajouter un Créneau
                 </button>
+                <button id="tsb-block-mode-btn" class="tsb-btn tsb-btn-warning">
+                    Mode blocage
+                </button>
             </div>
             
-            <div id="tsb-booking-table">
-                <table class="tsb-table">
+            <!-- Daily View -->
+            <div id="tsb-daily-view" class="tsb-daily-view">
+                <div id="tsb-booking-table">
+                    <table class="tsb-table">
+                        <thead>
+                            <tr>
+                                <th class="tsb-th">Horaires</th>
+                                <th class="tsb-th">Créneaux</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tsb-table-body">
+                            <!-- Sample data for testing -->
+                            <tr>
+                                <td class="tsb-time-cell" data-label="Horaires">09:00 - 10:00</td>
+                                <td class="tsb-slot-cell" data-label="Créneaux">
+                                    <div class="tsb-slots-container">
+                                        <div class="tsb-slot-item tsb-slot-available" data-slot-id="1">
+                                            <div class="tsb-slot-info">
+                                                <div class="tsb-slot-status">Disponible</div>
+                                                <div class="tsb-slot-capacity">2/5 inscrit(s)</div>
+                                            </div>
+                                            <div class="tsb-slot-actions">
+                                                <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="1">S'inscrire</button>
+                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="1">Supprimer</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="tsb-time-cell" data-label="Horaires">10:00 - 11:00</td>
+                                <td class="tsb-slot-cell" data-label="Créneaux">
+                                    <div class="tsb-slots-container">
+                                        <div class="tsb-slot-item tsb-slot-full" data-slot-id="2">
+                                            <div class="tsb-slot-info">
+                                                <div class="tsb-slot-status">Complet</div>
+                                                <div class="tsb-slot-capacity">3/3 inscrit(s)</div>
+                                            </div>
+                                            <div class="tsb-slot-actions">
+                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="2">Supprimer</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="tsb-time-cell" data-label="Horaires">14:00 - 15:00</td>
+                                <td class="tsb-slot-cell" data-label="Créneaux">
+                                    <div class="tsb-slots-container">
+                                        <div class="tsb-slot-item tsb-slot-available" data-slot-id="3">
+                                            <div class="tsb-slot-info">
+                                                <div class="tsb-slot-status">Disponible</div>
+                                                <div class="tsb-slot-capacity">0/4 inscrit(s)</div>
+                                            </div>
+                                            <div class="tsb-slot-actions">
+                                                <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="3">S'inscrire</button>
+                                                <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="3">Supprimer</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Weekly View -->
+            <div id="tsb-weekly-view" class="tsb-weekly-view" style="display: none;">
+                <table class="tsb-weekly-table">
                     <thead>
                         <tr>
-                            <th class="tsb-th">Horaires</th>
-                            <th class="tsb-th">Créneaux</th>
+                            <th class="time-header">Horaires</th>
+                            <th>Lundi</th>
+                            <th>Mardi</th>
+                            <th>Mercredi</th>
+                            <th>Jeudi</th>
+                            <th>Vendredi</th>
+                            <th>Samedi</th>
+                            <th>Dimanche</th>
                         </tr>
                     </thead>
-                    <tbody id="tsb-table-body">
-                        <!-- Sample data for testing -->
+                    <tbody id="tsb-weekly-table-body">
+                        <!-- Sample weekly data for testing -->
                         <tr>
-                            <td class="tsb-time-cell" data-label="Horaires">09:00 - 10:00</td>
-                            <td class="tsb-slot-cell" data-label="Créneaux">
-                                <div class="tsb-slots-container">
-                                    <div class="tsb-slot-item tsb-slot-available" data-slot-id="1">
-                                        <div class="tsb-slot-info">
-                                            <div class="tsb-slot-status">Disponible</div>
-                                            <div class="tsb-slot-capacity">2/5 inscrit(s)</div>
-                                        </div>
-                                        <div class="tsb-slot-actions">
-                                            <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="1">S'inscrire</button>
-                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="1">Supprimer</button>
-                                        </div>
-                                    </div>
+                            <td class="time-cell">09:00<br><small>10:00</small></td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="1">
+                                    <div class="tsb-slot-status-mini">Libre</div>
+                                    <div class="tsb-slot-capacity-mini">2/5</div>
                                 </div>
                             </td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-full-mini" data-slot-id="2">
+                                    <div class="tsb-slot-status-mini">Complet</div>
+                                    <div class="tsb-slot-capacity-mini">3/3</div>
+                                </div>
+                            </td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="3">
+                                    <div class="tsb-slot-status-mini">Libre</div>
+                                    <div class="tsb-slot-capacity-mini">1/4</div>
+                                </div>
+                            </td>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-blocked-mini" data-slot-id="4">
+                                    <div class="tsb-slot-status-mini">Bloqué</div>
+                                    <div class="tsb-slot-capacity-mini">0/2</div>
+                                </div>
+                            </td>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot"></td>
                         </tr>
                         <tr>
-                            <td class="tsb-time-cell" data-label="Horaires">10:00 - 11:00</td>
-                            <td class="tsb-slot-cell" data-label="Créneaux">
-                                <div class="tsb-slots-container">
-                                    <div class="tsb-slot-item tsb-slot-full" data-slot-id="2">
-                                        <div class="tsb-slot-info">
-                                            <div class="tsb-slot-status">Complet</div>
-                                            <div class="tsb-slot-capacity">3/3 inscrit(s)</div>
-                                        </div>
-                                        <div class="tsb-slot-actions">
-                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="2">Supprimer</button>
-                                        </div>
-                                    </div>
+                            <td class="time-cell">14:00<br><small>15:00</small></td>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="5">
+                                    <div class="tsb-slot-status-mini">Libre</div>
+                                    <div class="tsb-slot-capacity-mini">0/3</div>
                                 </div>
                             </td>
-                        </tr>
-                        <tr>
-                            <td class="tsb-time-cell" data-label="Horaires">14:00 - 15:00</td>
-                            <td class="tsb-slot-cell" data-label="Créneaux">
-                                <div class="tsb-slots-container">
-                                    <div class="tsb-slot-item tsb-slot-available" data-slot-id="3">
-                                        <div class="tsb-slot-info">
-                                            <div class="tsb-slot-status">Disponible</div>
-                                            <div class="tsb-slot-capacity">0/4 inscrit(s)</div>
-                                        </div>
-                                        <div class="tsb-slot-actions">
-                                            <button class="tsb-btn tsb-btn-success tsb-btn-small tsb-register-btn" data-slot-id="3">S'inscrire</button>
-                                            <button class="tsb-btn tsb-btn-danger tsb-btn-small tsb-remove-btn" data-slot-id="3">Supprimer</button>
-                                        </div>
-                                    </div>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot">
+                                <div class="tsb-slot-item-mini tsb-slot-available-mini" data-slot-id="6">
+                                    <div class="tsb-slot-status-mini">Libre</div>
+                                    <div class="tsb-slot-capacity-mini">1/2</div>
                                 </div>
                             </td>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot"></td>
+                            <td class="tsb-weekly-slot"></td>
                         </tr>
                     </tbody>
                 </table>
@@ -174,6 +258,61 @@
                 day: 'numeric' 
             };
             document.getElementById('tsb-current-date').textContent = currentDate.toLocaleDateString('fr-FR', options);
+            
+            // View switching functionality
+            let currentView = 'daily';
+            
+            function switchView(view) {
+                currentView = view;
+                
+                // Update active button
+                document.querySelectorAll('.tsb-view-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`[data-view="${view}"]`).classList.add('active');
+                
+                // Show/hide appropriate views
+                if (view === 'weekly') {
+                    document.getElementById('tsb-daily-view').style.display = 'none';
+                    document.getElementById('tsb-weekly-view').style.display = 'block';
+                    updateDateDisplayForWeekly();
+                } else {
+                    document.getElementById('tsb-weekly-view').style.display = 'none';
+                    document.getElementById('tsb-daily-view').style.display = 'block';
+                    updateDateDisplayForDaily();
+                }
+            }
+            
+            function updateDateDisplayForDaily() {
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                };
+                document.getElementById('tsb-current-date').textContent = currentDate.toLocaleDateString('fr-FR', options);
+            }
+            
+            function updateDateDisplayForWeekly() {
+                const weekStart = new Date(currentDate);
+                const day = weekStart.getDay();
+                const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Monday start
+                weekStart.setDate(diff);
+                
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekEnd.getDate() + 6);
+                
+                const startStr = weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                const endStr = weekEnd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+                
+                document.getElementById('tsb-current-date').textContent = `Semaine du ${startStr} au ${endStr}`;
+            }
+            
+            // Add event listeners for view buttons
+            document.querySelectorAll('.tsb-view-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const view = this.getAttribute('data-view');
+                    switchView(view);
+                });
+            });
             
             // Modal functionality
             function hideAllModals() {

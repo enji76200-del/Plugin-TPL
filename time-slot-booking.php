@@ -186,10 +186,17 @@ class TimeSlotBooking {
         ob_start();
         ?>
         <div id="tsb-booking-container">
-            <div class="tsb-date-navigation">
-                <button id="tsb-prev-date" class="tsb-nav-btn">&larr;</button>
-                <span id="tsb-current-date"></span>
-                <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
+            <div class="tsb-view-controls">
+                <div class="tsb-view-toggle">
+                    <button class="tsb-view-btn active" data-view="daily"><?php _e('Vue journalière', 'time-slot-booking'); ?></button>
+                    <button class="tsb-view-btn" data-view="weekly"><?php _e('Vue hebdomadaire', 'time-slot-booking'); ?></button>
+                </div>
+                
+                <div class="tsb-date-navigation">
+                    <button id="tsb-prev-date" class="tsb-nav-btn">&larr;</button>
+                    <span id="tsb-current-date"></span>
+                    <button id="tsb-next-date" class="tsb-nav-btn">&rarr;</button>
+                </div>
             </div>
             
             <?php if ($atts['show_admin'] || current_user_can('manage_options')): ?>
@@ -197,21 +204,56 @@ class TimeSlotBooking {
                 <button id="tsb-add-slot-btn" class="tsb-btn tsb-btn-primary">
                     <?php _e('Add Time Slot', 'time-slot-booking'); ?>
                 </button>
+                <button id="tsb-block-mode-btn" class="tsb-btn tsb-btn-warning">
+                    <?php _e('Mode blocage', 'time-slot-booking'); ?>
+                </button>
             </div>
             <?php endif; ?>
             
-            <div id="tsb-booking-table">
-                <table class="tsb-table">
+            <!-- Daily View -->
+            <div id="tsb-daily-view" class="tsb-daily-view">
+                <div id="tsb-booking-table">
+                    <table class="tsb-table">
+                        <thead>
+                            <tr>
+                                <th class="tsb-th"><?php _e('Horaires', 'time-slot-booking'); ?></th>
+                                <th class="tsb-th"><?php _e('Créneaux', 'time-slot-booking'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tsb-table-body">
+                            <!-- Dynamic content will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Weekly View -->
+            <div id="tsb-weekly-view" class="tsb-weekly-view" style="display: none;">
+                <table class="tsb-weekly-table">
                     <thead>
                         <tr>
-                            <th class="tsb-th"><?php _e('Horaires', 'time-slot-booking'); ?></th>
-                            <th class="tsb-th"><?php _e('Créneaux', 'time-slot-booking'); ?></th>
+                            <th class="time-header"><?php _e('Horaires', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Lundi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Mardi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Mercredi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Jeudi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Vendredi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Samedi', 'time-slot-booking'); ?></th>
+                            <th><?php _e('Dimanche', 'time-slot-booking'); ?></th>
                         </tr>
                     </thead>
-                    <tbody id="tsb-table-body">
-                        <!-- Dynamic content will be loaded here -->
+                    <tbody id="tsb-weekly-table-body">
+                        <!-- Dynamic weekly content will be loaded here -->
                     </tbody>
                 </table>
+            </div>
+            
+            <!-- User Registrations Panel -->
+            <div id="tsb-my-registrations" class="tsb-my-registrations" style="display: none;">
+                <h4><?php _e('Mes inscriptions', 'time-slot-booking'); ?></h4>
+                <div id="tsb-registrations-list">
+                    <!-- User registrations will be loaded here -->
+                </div>
             </div>
             
             <!-- Add Time Slot Modal -->
@@ -244,13 +286,15 @@ class TimeSlotBooking {
                     <h3><?php _e('Register for Time Slot', 'time-slot-booking'); ?></h3>
                     <form id="tsb-register-form">
                         <input type="hidden" id="tsb-register-slot-id">
-                        <div class="tsb-form-group">
-                            <label><?php _e('First Name:', 'time-slot-booking'); ?></label>
-                            <input type="text" id="tsb-user-first-name" required>
-                        </div>
-                        <div class="tsb-form-group">
-                            <label><?php _e('Last Name:', 'time-slot-booking'); ?></label>
-                            <input type="text" id="tsb-user-last-name" required>
+                        <div class="tsb-form-row">
+                            <div class="tsb-form-group">
+                                <label><?php _e('First Name:', 'time-slot-booking'); ?></label>
+                                <input type="text" id="tsb-user-first-name" required>
+                            </div>
+                            <div class="tsb-form-group">
+                                <label><?php _e('Last Name:', 'time-slot-booking'); ?></label>
+                                <input type="text" id="tsb-user-last-name" required>
+                            </div>
                         </div>
                         <div class="tsb-form-group">
                             <label><?php _e('Email:', 'time-slot-booking'); ?></label>
@@ -261,6 +305,50 @@ class TimeSlotBooking {
                             <input type="tel" id="tsb-user-phone">
                         </div>
                         <button type="submit" class="tsb-btn tsb-btn-primary"><?php _e('Register', 'time-slot-booking'); ?></button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- User Unregistration Modal -->
+            <div id="tsb-unregister-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3><?php _e('Se désinscrire du créneau', 'time-slot-booking'); ?></h3>
+                    <form id="tsb-unregister-form">
+                        <input type="hidden" id="tsb-unregister-slot-id">
+                        <div class="tsb-form-group">
+                            <label><?php _e('Email de confirmation:', 'time-slot-booking'); ?></label>
+                            <input type="email" id="tsb-unregister-email" required>
+                            <small><?php _e('Entrez votre email pour confirmer la désinscription', 'time-slot-booking'); ?></small>
+                        </div>
+                        <div class="tsb-form-group">
+                            <label><?php _e('Raison (optionnelle):', 'time-slot-booking'); ?></label>
+                            <textarea id="tsb-unregister-reason" rows="3" placeholder="<?php _e('Pourquoi vous désinscrivez-vous ?', 'time-slot-booking'); ?>"></textarea>
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-danger"><?php _e('Me désinscrire', 'time-slot-booking'); ?></button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Block Slot Modal -->
+            <div id="tsb-block-slot-modal" class="tsb-modal" style="display: none;">
+                <div class="tsb-modal-content">
+                    <span class="tsb-close">&times;</span>
+                    <h3><?php _e('Bloquer/Débloquer le créneau', 'time-slot-booking'); ?></h3>
+                    <form id="tsb-block-slot-form">
+                        <input type="hidden" id="tsb-block-slot-id">
+                        <input type="hidden" id="tsb-block-action">
+                        <div class="tsb-form-group">
+                            <label>
+                                <input type="checkbox" id="tsb-block-checkbox"> 
+                                <?php _e('Bloquer ce créneau', 'time-slot-booking'); ?>
+                            </label>
+                        </div>
+                        <div class="tsb-form-group" id="tsb-block-reason-group">
+                            <label><?php _e('Raison du blocage:', 'time-slot-booking'); ?></label>
+                            <input type="text" id="tsb-block-reason" placeholder="<?php _e('Ex: Maintenance, Congés, etc.', 'time-slot-booking'); ?>">
+                        </div>
+                        <button type="submit" class="tsb-btn tsb-btn-warning"><?php _e('Appliquer', 'time-slot-booking'); ?></button>
                     </form>
                 </div>
             </div>
